@@ -45,6 +45,18 @@ This overwrites `telemetry.pb.c`/`telemetry.pb.h`. Review the diff, then commit 
 
 If you're only regenerating bindings for a non-firmware consumer (e.g. the backend), use a plain `protoc --<lang>_out=...` invocation against `telemetry.proto` instead — you don't need nanopb or `telemetry.options` for that.
 
+## CI
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push/PR to `main`:
+
+| Job | What it catches |
+| --- | --- |
+| Generated code is up to date | Regenerates `telemetry.pb.c`/`.pb.h` and fails if the result differs from what's committed — i.e. someone edited `telemetry.proto`/`.options` and forgot to regenerate |
+| Generated code compiles | Compiles `telemetry.pb.c` against the matching nanopb C runtime as a cheap sanity check |
+| No breaking changes vs main | [`buf breaking`](https://buf.build/docs/breaking/overview) checks wire-format compatibility (`buf.yaml`) against the previous commit (on push) or the PR base branch (on PR) — catches things like a reused field number that would silently corrupt data for whichever side (firmware or backend) hasn't redeployed yet |
+
+The nanopb version used by the first two jobs is pinned in the workflow's `NANOPB_VERSION` env var — bump it there if you intentionally upgrade nanopb.
+
 ## Updating firmware to a new schema version
 
 After pushing changes here, bump the submodule pointer in `green-gauge-core`:

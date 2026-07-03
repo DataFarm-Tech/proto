@@ -1,0 +1,7 @@
+version: v1
+breaking:
+  use:
+    # Wire-only compatibility: both consumers (nanopb on the firmware side,
+    # and the backend) decode raw protobuf wire format, not JSON, so a pure
+    # field rename shouldn't fail CI the way WIRE_JSON would flag it.
+    - WIRE

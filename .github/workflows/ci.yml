@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  # Keep in sync with the generator version other consumers pin to
+  # (see README.md "Regenerating").
+  NANOPB_VERSION: "0.4.9.1"
+
+jobs:
+  regen-check:
+    name: Generated code is up to date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install protoc + nanopb generator
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+          pip install "nanopb==${NANOPB_VERSION}"
+
+      - name: Regenerate telemetry.pb.c/.pb.h
+        run: nanopb_generator -I. telemetry.proto
+
+      - name: Fail if committed output is stale
+        run: |
+          if ! git diff --exit-code -- telemetry.pb.c telemetry.pb.h; then
+            echo "::error::telemetry.pb.c/.pb.h are out of date with telemetry.proto/.options." \
+                 "Run 'nanopb_generator -I. telemetry.proto' locally and commit the result."
+            exit 1
+          fi
+
+  compile-check:
+    name: Generated code compiles against nanopb runtime
+    needs: regen-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch matching nanopb C runtime
+        run: |
+          curl -sSL -o nanopb.tar.gz \
+            "https://github.com/nanopb/nanopb/archive/refs/tags/nanopb-${NANOPB_VERSION}.tar.gz"
+          tar xzf nanopb.tar.gz
+          mv "nanopb-nanopb-${NANOPB_VERSION}" nanopb-src
+
+      - name: Compile telemetry.pb.c
+        run: |
+          gcc -c -Wall -Wextra -std=c99 \
+            -I. -Inanopb-src \
+            telemetry.pb.c -o /tmp/telemetry.pb.o
+
+  breaking-change-check:
+    name: No breaking changes vs main
+    runs-on: ubuntu-latest
+    # Nothing to compare against on the very first push to an empty history,
+    # and no meaningful "previous" ref on the initial commit to main.
+    if: github.event_name == 'pull_request' || github.event.before != '0000000000000000000000000000000000000000'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: bufbuild/buf-setup-action@v1
+
+      - name: buf breaking (against PR base branch)
+        if: github.event_name == 'pull_request'
+        uses: bufbuild/buf-breaking-action@v1
+        with:
+          against: "https://github.com/${{ github.repository }}.git#branch=${{ github.base_ref }}"
+
+      - name: buf breaking (against previous commit)
+        if: github.event_name == 'push'
+        uses: bufbuild/buf-breaking-action@v1
+        with:
+          against: "https://github.com/${{ github.repository }}.git#ref=${{ github.event.before }}"
