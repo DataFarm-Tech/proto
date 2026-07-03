@@ -1,0 +1,39 @@
+// telemetry.pb.c/.pb.h are committed generated code, not built at compile
+// time (the ESP-IDF nanopb component only vendors the runtime, not the
+// generator). After editing this file or telemetry.options, regenerate with:
+//
+//   pip install --user nanopb
+//   cd main/proto && nanopb_generator -I. telemetry.proto
+//
+// then commit the updated telemetry.pb.c/.pb.h alongside this file.
+syntax = "proto3";
+
+message ActivateRequest {
+    string node_id    = 1;
+    string secretkey  = 2;
+    string gps        = 3;
+    float  soc        = 4;
+    string fw_ver     = 5;
+    string hw_ver     = 6;
+    string sim_mod_sn = 7;
+    string sim_card_sn = 8;
+    string chassis_ver = 9;
+}
+
+message GpsUpdateRequest {
+    string node_id = 1;
+    string gps     = 2;
+    float  soc     = 3;
+    string fw_ver  = 4;
+}
+
+message ReadingRequest {
+    string node_id          = 1;
+    string m_type            = 2;
+    repeated float readings  = 3;
+    uint64 session            = 4;
+}
+
+message StringValue {
+    string value = 1;
+}
