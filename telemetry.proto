@@ -1,11 +1,13 @@
 // telemetry.pb.c/.pb.h are committed generated code, not built at compile
-// time (the ESP-IDF nanopb component only vendors the runtime, not the
-// generator). After editing this file or telemetry.options, regenerate with:
+// time by consumers (the firmware's ESP-IDF nanopb component only vendors
+// the runtime, not the generator). After editing this file or
+// telemetry.options, regenerate with:
 //
 //   pip install --user nanopb
-//   cd main/proto && nanopb_generator -I. telemetry.proto
+//   nanopb_generator -I. telemetry.proto
 //
 // then commit the updated telemetry.pb.c/.pb.h alongside this file.
+// See README.md for details.
 syntax = "proto3";
 
 message ActivateRequest {
