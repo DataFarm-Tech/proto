@@ -38,7 +38,7 @@ typedef struct _ReadingRequest {
 } ReadingRequest;
 
 typedef struct _StringValue {
-    char value[256];
+    char value[512];
 } StringValue;
 
 
@@ -126,8 +126,8 @@ extern const pb_msgdesc_t StringValue_msg;
 #define ActivateRequest_size                     301
 #define GpsUpdateRequest_size                    136
 #define ReadingRequest_size                      186
-#define StringValue_size                         258
-#define TELEMETRY_PB_H_MAX_SIZE                  ActivateRequest_size
+#define StringValue_size                         514
+#define TELEMETRY_PB_H_MAX_SIZE                  StringValue_size
 
 #ifdef __cplusplus
 } /* extern "C" */

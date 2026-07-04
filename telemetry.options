@@ -15,4 +15,8 @@ ReadingRequest.node_id   max_size:32
 ReadingRequest.m_type    max_size:16
 ReadingRequest.readings  max_count:25
 
-StringValue.value  max_size:256
+# 512 rather than a round 256: this carries B2 signed download-authorization
+# URLs (base URL + "?Authorization=" + URL-encoded token), which can land
+# close to or over 256 bytes on their own. nanopb decode fails outright
+# (doesn't truncate) if a message doesn't fit this buffer.
+StringValue.value  max_size:512
