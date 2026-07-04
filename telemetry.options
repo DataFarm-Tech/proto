@@ -13,7 +13,6 @@ GpsUpdateRequest.fw_ver   max_size:32
 
 ReadingRequest.node_id   max_size:32
 ReadingRequest.m_type    max_size:16
-ReadingRequest.readings  max_count:25
 
 # 512 rather than a round 256: this carries B2 signed download-authorization
 # URLs (base URL + "?Authorization=" + URL-encoded token), which can land

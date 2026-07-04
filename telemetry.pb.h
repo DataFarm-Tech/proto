@@ -32,9 +32,12 @@ typedef struct _GpsUpdateRequest {
 typedef struct _ReadingRequest {
     char node_id[32];
     char m_type[16];
-    pb_size_t readings_count;
-    float readings[25];
     uint64_t session;
+    /* Already scaled to physical units and aggregated on-device (divisor
+ conversion, min/max range filter, z-score outlier rejection, median)
+ -- the server only classifies/persists this value, it no longer
+ aggregates raw samples itself. */
+    float reading;
 } ReadingRequest;
 
 typedef struct _StringValue {
@@ -49,11 +52,11 @@ extern "C" {
 /* Initializer values for message structs */
 #define ActivateRequest_init_default             {"", "", "", 0, "", "", "", "", ""}
 #define GpsUpdateRequest_init_default            {"", "", 0, ""}
-#define ReadingRequest_init_default              {"", "", 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0}
+#define ReadingRequest_init_default              {"", "", 0, 0}
 #define StringValue_init_default                 {""}
 #define ActivateRequest_init_zero                {"", "", "", 0, "", "", "", "", ""}
 #define GpsUpdateRequest_init_zero               {"", "", 0, ""}
-#define ReadingRequest_init_zero                 {"", "", 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0}
+#define ReadingRequest_init_zero                 {"", "", 0, 0}
 #define StringValue_init_zero                    {""}
 
 /* Field tags (for use in manual encoding/decoding) */
@@ -72,8 +75,8 @@ extern "C" {
 #define GpsUpdateRequest_fw_ver_tag              4
 #define ReadingRequest_node_id_tag               1
 #define ReadingRequest_m_type_tag                2
-#define ReadingRequest_readings_tag              3
 #define ReadingRequest_session_tag               4
+#define ReadingRequest_reading_tag               5
 #define StringValue_value_tag                    1
 
 /* Struct field encoding specification for nanopb */
@@ -101,8 +104,8 @@ X(a, STATIC,   SINGULAR, STRING,   fw_ver,            4)
 #define ReadingRequest_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, STRING,   node_id,           1) \
 X(a, STATIC,   SINGULAR, STRING,   m_type,            2) \
-X(a, STATIC,   REPEATED, FLOAT,    readings,          3) \
-X(a, STATIC,   SINGULAR, UINT64,   session,           4)
+X(a, STATIC,   SINGULAR, UINT64,   session,           4) \
+X(a, STATIC,   SINGULAR, FLOAT,    reading,           5)
 #define ReadingRequest_CALLBACK NULL
 #define ReadingRequest_DEFAULT NULL
 
@@ -125,7 +128,7 @@ extern const pb_msgdesc_t StringValue_msg;
 /* Maximum encoded size of messages (where known) */
 #define ActivateRequest_size                     301
 #define GpsUpdateRequest_size                    136
-#define ReadingRequest_size                      186
+#define ReadingRequest_size                      66
 #define StringValue_size                         514
 #define TELEMETRY_PB_H_MAX_SIZE                  StringValue_size
 

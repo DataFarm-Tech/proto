@@ -33,10 +33,17 @@ message GpsUpdateRequest {
 }
 
 message ReadingRequest {
-    string node_id          = 1;
-    string m_type            = 2;
-    repeated float readings  = 3;
-    uint64 session            = 4;
+    reserved 3;
+    reserved "readings";
+
+    string node_id  = 1;
+    string m_type    = 2;
+    uint64 session   = 4;
+    // Already scaled to physical units and aggregated on-device (divisor
+    // conversion, min/max range filter, z-score outlier rejection, median)
+    // -- the server only classifies/persists this value, it no longer
+    // aggregates raw samples itself.
+    float  reading   = 5;
 }
 
 message StringValue {
