@@ -30,14 +30,30 @@ Protocol Buffers has no IANA-assigned CoAP Content-Format number. Both sides of 
 - **Firmware** ([green-gauge-core](https://github.com/DataFarm-Tech/green-gauge-core)) — pulls this repo in as a git submodule at `main/proto/`, and compiles the committed `telemetry.pb.c` directly (see that repo's README for details, and the [Regenerating](#regenerating) section below for why the generated code is committed rather than built from `.proto` at compile time).
 - **Backend** — regenerate bindings for whatever language the backend is written in using a standard `protoc` invocation against `telemetry.proto` (no nanopb-specific tooling needed on that side; `telemetry.options` only affects the nanopb/C output).
 
+## Development setup (virtual environment)
+
+Regenerating the schema needs `protoc` plus the `nanopb` Python package (the generator). Use a virtual environment rather than installing into your system/user Python, so the pinned generator version here doesn't clash with other projects:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+
+pip install -r requirements.txt
+```
+
+`requirements.txt` pins `nanopb` to the exact version the CI compile-check builds against (kept in sync with `NANOPB_VERSION` in `.github/workflows/ci.yml`) — installing anything else risks generating code that compiles locally but fails the CI compile-check, or vice versa.
+
+You'll also need `protoc` itself (the generator shells out to it) — install via your system package manager (`apt install protobuf-compiler`, `brew install protobuf`, etc.), since it isn't a Python package.
+
+Re-activate the venv (`source .venv/bin/activate`) in any new shell before running `nanopb_generator`.
+
 ## Regenerating
 
 `telemetry.pb.c`/`telemetry.pb.h` are nanopb-generated C code, committed to this repo rather than generated at firmware build time — the ESP-IDF `nikas-belogolov/nanopb` component only vendors the nanopb runtime (`pb_encode.c`/`pb_decode.c`/`pb_common.c`), not the code generator, so there is no build-time `.proto` → `.pb.c` step available on the firmware build machine.
 
-After editing `telemetry.proto` or `telemetry.options`:
+After editing `telemetry.proto` or `telemetry.options`, with the [venv above](#development-setup-virtual-environment) activated:
 
 ```bash
-pip install --user nanopb
 nanopb_generator -I. telemetry.proto
 ```
 
