@@ -10,6 +10,9 @@
 // See README.md for details.
 syntax = "proto3";
 
+option java_package = "com.datafarmtech.telemetry";
+option java_multiple_files = true;
+
 message ActivateRequest {
     string node_id    = 1;
     string secretkey  = 2;
