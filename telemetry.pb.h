@@ -62,7 +62,7 @@ typedef PB_BYTES_ARRAY_T(8) NetStat_cell_id_t;
 typedef struct _NetStat {
     int32_t rsrq;
     int32_t sinr;
-    char operator[32];
+    char carrier[32]; /* mobile network operator name (not "operator" -- that's a reserved word in C++, which nanopb's generated struct must compile under) */
     NetStat_cell_id_t cell_id;
     uint32_t band;
     uint32_t lac;
@@ -149,7 +149,7 @@ extern "C" {
 #define ActivateRequest_net_info_tag             6
 #define NetStat_rsrq_tag                         1
 #define NetStat_sinr_tag                         2
-#define NetStat_operator_tag                     3
+#define NetStat_carrier_tag                      3
 #define NetStat_cell_id_tag                      4
 #define NetStat_band_tag                         5
 #define NetStat_lac_tag                          6
@@ -233,7 +233,7 @@ X(a, STATIC,   SINGULAR, STRING,   imsi,              3)
 #define NetStat_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, SINT32,   rsrq,              1) \
 X(a, STATIC,   SINGULAR, SINT32,   sinr,              2) \
-X(a, STATIC,   SINGULAR, STRING,   operator,          3) \
+X(a, STATIC,   SINGULAR, STRING,   carrier,           3) \
 X(a, STATIC,   SINGULAR, BYTES,    cell_id,           4) \
 X(a, STATIC,   SINGULAR, UINT32,   band,              5) \
 X(a, STATIC,   SINGULAR, UINT32,   lac,               6) \

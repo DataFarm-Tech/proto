@@ -12,7 +12,7 @@ NetInfo.iccid  max_size:24
 NetInfo.imei   max_size:16
 NetInfo.imsi   max_size:16
 
-NetStat.operator  max_size:32
+NetStat.carrier   max_size:32
 NetStat.cell_id   max_size:8
 
 ReadingRequest.node_id   max_size:32

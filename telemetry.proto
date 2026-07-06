@@ -68,7 +68,7 @@ message NetInfo {
 message NetStat {
   sint32 rsrq     = 1;
   sint32 sinr     = 2;
-  string operator = 3;
+  string carrier  = 3; // mobile network operator name (not "operator" -- that's a reserved word in C++, which nanopb's generated struct must compile under)
   bytes  cell_id  = 4;
   uint32 band     = 5;
   uint32 lac      = 6;
