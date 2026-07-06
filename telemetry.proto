@@ -14,22 +14,65 @@ option java_package = "com.datafarmtech.telemetry";
 option java_multiple_files = true;
 
 message ActivateRequest {
-    string node_id    = 1;
-    string secretkey  = 2;
-    string gps        = 3;
-    float  soc        = 4;
-    string fw_ver     = 5;
-    string hw_ver     = 6;
-    string sim_mod_sn = 7;
-    string sim_card_sn = 8;
-    string chassis_ver = 9;
+    string   node_id   = 1;
+    Position position  = 3;
+    Battery  battery   = 4;
+    Manf     manf      = 5;
+    NetInfo  net_info  = 6;
+}
+
+message Manf {
+  string fw_ver      = 1;
+  string hw_ver      = 2;
+  string chassis_ver = 3;
 }
 
 message GpsUpdateRequest {
-    string node_id = 1;
-    string gps     = 2;
-    float  soc     = 3;
-    string fw_ver  = 4;
+    string   node_id  = 1;
+    Position position = 2;
+    Battery  battery  = 3;
+    OtaStatus firmware = 4;
+    NetStat  net_stat = 5;
+}
+
+message OtaStatus {
+    string fw_ver    = 1;
+    bool just_updated = 2;
+    uint32 boot_count  = 3;
+}
+
+message Battery {
+  float voltage  = 1; // volts, straight off the fuel-gauge/ADC reading
+  float soc      = 2; // state of charge, percent 0-100
+  bool  charging = 3; // true if actively charging (e.g. solar input present)
+  float temp_c   = 4; // battery temperature, Celsius
+}
+
+message Position {
+  float   lat        = 1;
+  float   lon        = 2;
+  fixed32 fix_time   = 3; // unix epoch seconds of the fix itself, not of message receipt
+  float   accuracy_m = 4; // estimated horizontal accuracy, metres
+  bool    fix_valid  = 5; // false if this is a stale/last-known fallback position, not a live fix
+}
+
+// SIM/module identity — fixed to the physical hardware, doesn't change without a SIM swap.
+message NetInfo {
+  string iccid = 1;
+  string imei  = 2;
+  string imsi  = 3;
+}
+
+// Which cell/network the device is on right now, and how good that connection is —
+// travels with each GpsUpdateRequest so it can be correlated with position over time.
+message NetStat {
+  sint32 rsrq     = 1;
+  sint32 sinr     = 2;
+  string operator = 3;
+  bytes  cell_id  = 4;
+  uint32 band     = 5;
+  uint32 lac      = 6;
+  uint32 rat      = 7;
 }
 
 message ReadingRequest {

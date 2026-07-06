@@ -1,15 +1,19 @@
-ActivateRequest.node_id      max_size:32
-ActivateRequest.secretkey    max_size:32
-ActivateRequest.gps          max_size:64
-ActivateRequest.fw_ver       max_size:32
-ActivateRequest.hw_ver       max_size:32
-ActivateRequest.sim_mod_sn   max_size:32
-ActivateRequest.sim_card_sn  max_size:32
-ActivateRequest.chassis_ver  max_size:32
+ActivateRequest.node_id  max_size:32
 
 GpsUpdateRequest.node_id  max_size:32
-GpsUpdateRequest.gps      max_size:64
-GpsUpdateRequest.fw_ver   max_size:32
+
+Manf.fw_ver       max_size:32
+Manf.hw_ver       max_size:32
+Manf.chassis_ver  max_size:32
+
+OtaStatus.fw_ver  max_size:32
+
+NetInfo.iccid  max_size:24
+NetInfo.imei   max_size:16
+NetInfo.imsi   max_size:16
+
+NetStat.operator  max_size:32
+NetStat.cell_id   max_size:8
 
 ReadingRequest.node_id   max_size:32
 ReadingRequest.m_type    max_size:16
