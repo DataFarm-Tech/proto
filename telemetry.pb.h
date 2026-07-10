@@ -96,6 +96,16 @@ typedef struct _StringValue {
     char value[512];
 } StringValue;
 
+/* Minimal liveness/identity ping sent once, right after the device connects
+ to the network -- deliberately lightweight (no signal/network info, which
+ travels with GpsUpdateRequest.net_stat moments later) so it lands quickly
+ even if GPS acquisition or the rest of the boot cycle takes a while. */
+typedef struct _HealthRequest {
+    char node_id[32];
+    char boot_reason[32]; /* e.g. "power-on", "deep sleep wake", "task watchdog" */
+    char fw_ver[32];
+} HealthRequest;
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -112,6 +122,7 @@ extern "C" {
 #define NetStat_init_default                     {0, 0, "", {0, {0}}, 0, 0, 0}
 #define ReadingRequest_init_default              {"", "", 0, 0}
 #define StringValue_init_default                 {""}
+#define HealthRequest_init_default               {"", "", ""}
 #define ActivateRequest_init_zero                {"", false, Position_init_zero, false, Battery_init_zero, false, Manf_init_zero, false, NetInfo_init_zero}
 #define Manf_init_zero                           {"", "", ""}
 #define GpsUpdateRequest_init_zero               {"", false, Position_init_zero, false, Battery_init_zero, false, OtaStatus_init_zero, false, NetStat_init_zero}
@@ -122,6 +133,7 @@ extern "C" {
 #define NetStat_init_zero                        {0, 0, "", {0, {0}}, 0, 0, 0}
 #define ReadingRequest_init_zero                 {"", "", 0, 0}
 #define StringValue_init_zero                    {""}
+#define HealthRequest_init_zero                  {"", "", ""}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define Manf_fw_ver_tag                          1
@@ -164,6 +176,9 @@ extern "C" {
 #define ReadingRequest_session_tag               4
 #define ReadingRequest_reading_tag               5
 #define StringValue_value_tag                    1
+#define HealthRequest_node_id_tag                1
+#define HealthRequest_boot_reason_tag            2
+#define HealthRequest_fw_ver_tag                 3
 
 /* Struct field encoding specification for nanopb */
 #define ActivateRequest_FIELDLIST(X, a) \
@@ -254,6 +269,13 @@ X(a, STATIC,   SINGULAR, STRING,   value,             1)
 #define StringValue_CALLBACK NULL
 #define StringValue_DEFAULT NULL
 
+#define HealthRequest_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, STRING,   node_id,           1) \
+X(a, STATIC,   SINGULAR, STRING,   boot_reason,       2) \
+X(a, STATIC,   SINGULAR, STRING,   fw_ver,            3)
+#define HealthRequest_CALLBACK NULL
+#define HealthRequest_DEFAULT NULL
+
 extern const pb_msgdesc_t ActivateRequest_msg;
 extern const pb_msgdesc_t Manf_msg;
 extern const pb_msgdesc_t GpsUpdateRequest_msg;
@@ -264,6 +286,7 @@ extern const pb_msgdesc_t NetInfo_msg;
 extern const pb_msgdesc_t NetStat_msg;
 extern const pb_msgdesc_t ReadingRequest_msg;
 extern const pb_msgdesc_t StringValue_msg;
+extern const pb_msgdesc_t HealthRequest_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define ActivateRequest_fields &ActivateRequest_msg
@@ -276,11 +299,13 @@ extern const pb_msgdesc_t StringValue_msg;
 #define NetStat_fields &NetStat_msg
 #define ReadingRequest_fields &ReadingRequest_msg
 #define StringValue_fields &StringValue_msg
+#define HealthRequest_fields &HealthRequest_msg
 
 /* Maximum encoded size of messages (where known) */
 #define ActivateRequest_size                     238
 #define Battery_size                             17
 #define GpsUpdateRequest_size                    194
+#define HealthRequest_size                       99
 #define Manf_size                                99
 #define NetInfo_size                             59
 #define NetStat_size                             73

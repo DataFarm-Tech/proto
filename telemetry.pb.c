@@ -36,4 +36,7 @@ PB_BIND(ReadingRequest, ReadingRequest, AUTO)
 PB_BIND(StringValue, StringValue, 2)
 
 
+PB_BIND(HealthRequest, HealthRequest, AUTO)
+
+
 

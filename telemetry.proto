@@ -92,3 +92,13 @@ message ReadingRequest {
 message StringValue {
     string value = 1;
 }
+
+// Minimal liveness/identity ping sent once, right after the device connects
+// to the network -- deliberately lightweight (no signal/network info, which
+// travels with GpsUpdateRequest.net_stat moments later) so it lands quickly
+// even if GPS acquisition or the rest of the boot cycle takes a while.
+message HealthRequest {
+    string node_id     = 1;
+    string boot_reason = 2; // e.g. "power-on", "deep sleep wake", "task watchdog"
+    string fw_ver      = 3;
+}

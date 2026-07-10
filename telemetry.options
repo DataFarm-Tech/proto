@@ -23,3 +23,7 @@ ReadingRequest.m_type    max_size:16
 # close to or over 256 bytes on their own. nanopb decode fails outright
 # (doesn't truncate) if a message doesn't fit this buffer.
 StringValue.value  max_size:512
+
+HealthRequest.node_id     max_size:32
+HealthRequest.boot_reason max_size:32
+HealthRequest.fw_ver      max_size:32
