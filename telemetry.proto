@@ -102,3 +102,10 @@ message HealthRequest {
     string boot_reason = 2; // e.g. "power-on", "deep sleep wake", "task watchdog"
     string fw_ver      = 3;
 }
+
+// Node configuration fetched via a GET right after connecting, alongside
+// HealthRequest -- hardcoded on the server for now, no versioning/DB yet,
+// just enough to prove the fetch-and-persist path end to end.
+message ConfigResponse {
+    uint32 main_app_delay = 1; // seconds between check-in cycles
+}
