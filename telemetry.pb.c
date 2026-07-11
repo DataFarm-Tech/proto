@@ -39,6 +39,9 @@ PB_BIND(StringValue, StringValue, 2)
 PB_BIND(HealthRequest, HealthRequest, AUTO)
 
 
+PB_BIND(ConfigRequest, ConfigRequest, AUTO)
+
+
 PB_BIND(ConfigResponse, ConfigResponse, AUTO)
 
 

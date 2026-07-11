@@ -106,9 +106,16 @@ typedef struct _HealthRequest {
     char fw_ver[32];
 } HealthRequest;
 
+/* Sent alongside the GET to /config so the server knows which node's
+ config to look up -- the request itself carries no other CoAP-level
+ identity, unlike POST/PUT endpoints where node_id travels with the rest
+ of the payload. */
+typedef struct _ConfigRequest {
+    char node_id[32];
+} ConfigRequest;
+
 /* Node configuration fetched via a GET right after connecting, alongside
- HealthRequest -- hardcoded on the server for now, no versioning/DB yet,
- just enough to prove the fetch-and-persist path end to end. */
+ HealthRequest -- looked up from the node_config table server-side. */
 typedef struct _ConfigResponse {
     uint32_t main_app_delay; /* seconds between check-in cycles */
 } ConfigResponse;
@@ -130,6 +137,7 @@ extern "C" {
 #define ReadingRequest_init_default              {"", "", 0, 0}
 #define StringValue_init_default                 {""}
 #define HealthRequest_init_default               {"", "", ""}
+#define ConfigRequest_init_default               {""}
 #define ConfigResponse_init_default              {0}
 #define ActivateRequest_init_zero                {"", false, Position_init_zero, false, Battery_init_zero, false, Manf_init_zero, false, NetInfo_init_zero}
 #define Manf_init_zero                           {"", "", ""}
@@ -142,6 +150,7 @@ extern "C" {
 #define ReadingRequest_init_zero                 {"", "", 0, 0}
 #define StringValue_init_zero                    {""}
 #define HealthRequest_init_zero                  {"", "", ""}
+#define ConfigRequest_init_zero                  {""}
 #define ConfigResponse_init_zero                 {0}
 
 /* Field tags (for use in manual encoding/decoding) */
@@ -188,6 +197,7 @@ extern "C" {
 #define HealthRequest_node_id_tag                1
 #define HealthRequest_boot_reason_tag            2
 #define HealthRequest_fw_ver_tag                 3
+#define ConfigRequest_node_id_tag                1
 #define ConfigResponse_main_app_delay_tag        1
 
 /* Struct field encoding specification for nanopb */
@@ -286,6 +296,11 @@ X(a, STATIC,   SINGULAR, STRING,   fw_ver,            3)
 #define HealthRequest_CALLBACK NULL
 #define HealthRequest_DEFAULT NULL
 
+#define ConfigRequest_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, STRING,   node_id,           1)
+#define ConfigRequest_CALLBACK NULL
+#define ConfigRequest_DEFAULT NULL
+
 #define ConfigResponse_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UINT32,   main_app_delay,    1)
 #define ConfigResponse_CALLBACK NULL
@@ -302,6 +317,7 @@ extern const pb_msgdesc_t NetStat_msg;
 extern const pb_msgdesc_t ReadingRequest_msg;
 extern const pb_msgdesc_t StringValue_msg;
 extern const pb_msgdesc_t HealthRequest_msg;
+extern const pb_msgdesc_t ConfigRequest_msg;
 extern const pb_msgdesc_t ConfigResponse_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
@@ -316,11 +332,13 @@ extern const pb_msgdesc_t ConfigResponse_msg;
 #define ReadingRequest_fields &ReadingRequest_msg
 #define StringValue_fields &StringValue_msg
 #define HealthRequest_fields &HealthRequest_msg
+#define ConfigRequest_fields &ConfigRequest_msg
 #define ConfigResponse_fields &ConfigResponse_msg
 
 /* Maximum encoded size of messages (where known) */
 #define ActivateRequest_size                     238
 #define Battery_size                             17
+#define ConfigRequest_size                       33
 #define ConfigResponse_size                      6
 #define GpsUpdateRequest_size                    194
 #define HealthRequest_size                       99

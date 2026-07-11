@@ -103,9 +103,16 @@ message HealthRequest {
     string fw_ver      = 3;
 }
 
+// Sent alongside the GET to /config so the server knows which node's
+// config to look up -- the request itself carries no other CoAP-level
+// identity, unlike POST/PUT endpoints where node_id travels with the rest
+// of the payload.
+message ConfigRequest {
+    string node_id = 1;
+}
+
 // Node configuration fetched via a GET right after connecting, alongside
-// HealthRequest -- hardcoded on the server for now, no versioning/DB yet,
-// just enough to prove the fetch-and-persist path end to end.
+// HealthRequest -- looked up from the node_config table server-side.
 message ConfigResponse {
     uint32 main_app_delay = 1; // seconds between check-in cycles
 }
