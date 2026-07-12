@@ -120,6 +120,19 @@ typedef struct _ConfigResponse {
     uint32_t main_app_delay; /* seconds between check-in cycles */
 } ConfigResponse;
 
+/* One chunk of the node's system.log file, sent right after HealthRequest
+ at boot. The log can exceed a single UDP/OSCORE payload, so it's split
+ into fixed-size chunks and reassembled server-side by (node_id,
+ upload_id) -- upload_id is just the node's boot_count, reused rather
+ than tracking a separate counter, since one upload happens per boot. */
+typedef struct _LogChunk {
+    char node_id[32];
+    uint32_t upload_id;
+    uint32_t chunk_index; /* 0-based */
+    uint32_t total_chunks;
+    char data[600];
+} LogChunk;
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -139,6 +152,7 @@ extern "C" {
 #define HealthRequest_init_default               {"", "", ""}
 #define ConfigRequest_init_default               {""}
 #define ConfigResponse_init_default              {0}
+#define LogChunk_init_default                    {"", 0, 0, 0, ""}
 #define ActivateRequest_init_zero                {"", false, Position_init_zero, false, Battery_init_zero, false, Manf_init_zero, false, NetInfo_init_zero}
 #define Manf_init_zero                           {"", "", ""}
 #define GpsUpdateRequest_init_zero               {"", false, Position_init_zero, false, Battery_init_zero, false, OtaStatus_init_zero, false, NetStat_init_zero}
@@ -152,6 +166,7 @@ extern "C" {
 #define HealthRequest_init_zero                  {"", "", ""}
 #define ConfigRequest_init_zero                  {""}
 #define ConfigResponse_init_zero                 {0}
+#define LogChunk_init_zero                       {"", 0, 0, 0, ""}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define Manf_fw_ver_tag                          1
@@ -199,6 +214,11 @@ extern "C" {
 #define HealthRequest_fw_ver_tag                 3
 #define ConfigRequest_node_id_tag                1
 #define ConfigResponse_main_app_delay_tag        1
+#define LogChunk_node_id_tag                     1
+#define LogChunk_upload_id_tag                   2
+#define LogChunk_chunk_index_tag                 3
+#define LogChunk_total_chunks_tag                4
+#define LogChunk_data_tag                        5
 
 /* Struct field encoding specification for nanopb */
 #define ActivateRequest_FIELDLIST(X, a) \
@@ -306,6 +326,15 @@ X(a, STATIC,   SINGULAR, UINT32,   main_app_delay,    1)
 #define ConfigResponse_CALLBACK NULL
 #define ConfigResponse_DEFAULT NULL
 
+#define LogChunk_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, STRING,   node_id,           1) \
+X(a, STATIC,   SINGULAR, UINT32,   upload_id,         2) \
+X(a, STATIC,   SINGULAR, UINT32,   chunk_index,       3) \
+X(a, STATIC,   SINGULAR, UINT32,   total_chunks,      4) \
+X(a, STATIC,   SINGULAR, STRING,   data,              5)
+#define LogChunk_CALLBACK NULL
+#define LogChunk_DEFAULT NULL
+
 extern const pb_msgdesc_t ActivateRequest_msg;
 extern const pb_msgdesc_t Manf_msg;
 extern const pb_msgdesc_t GpsUpdateRequest_msg;
@@ -319,6 +348,7 @@ extern const pb_msgdesc_t StringValue_msg;
 extern const pb_msgdesc_t HealthRequest_msg;
 extern const pb_msgdesc_t ConfigRequest_msg;
 extern const pb_msgdesc_t ConfigResponse_msg;
+extern const pb_msgdesc_t LogChunk_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define ActivateRequest_fields &ActivateRequest_msg
@@ -334,6 +364,7 @@ extern const pb_msgdesc_t ConfigResponse_msg;
 #define HealthRequest_fields &HealthRequest_msg
 #define ConfigRequest_fields &ConfigRequest_msg
 #define ConfigResponse_fields &ConfigResponse_msg
+#define LogChunk_fields &LogChunk_msg
 
 /* Maximum encoded size of messages (where known) */
 #define ActivateRequest_size                     238
@@ -342,6 +373,7 @@ extern const pb_msgdesc_t ConfigResponse_msg;
 #define ConfigResponse_size                      6
 #define GpsUpdateRequest_size                    194
 #define HealthRequest_size                       99
+#define LogChunk_size                            653
 #define Manf_size                                99
 #define NetInfo_size                             59
 #define NetStat_size                             73
@@ -349,7 +381,7 @@ extern const pb_msgdesc_t ConfigResponse_msg;
 #define Position_size                            22
 #define ReadingRequest_size                      66
 #define StringValue_size                         514
-#define TELEMETRY_PB_H_MAX_SIZE                  StringValue_size
+#define TELEMETRY_PB_H_MAX_SIZE                  LogChunk_size
 
 #ifdef __cplusplus
 } /* extern "C" */

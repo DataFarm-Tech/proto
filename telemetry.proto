@@ -116,3 +116,16 @@ message ConfigRequest {
 message ConfigResponse {
     uint32 main_app_delay = 1; // seconds between check-in cycles
 }
+
+// One chunk of the node's system.log file, sent right after HealthRequest
+// at boot. The log can exceed a single UDP/OSCORE payload, so it's split
+// into fixed-size chunks and reassembled server-side by (node_id,
+// upload_id) -- upload_id is just the node's boot_count, reused rather
+// than tracking a separate counter, since one upload happens per boot.
+message LogChunk {
+    string node_id     = 1;
+    uint32 upload_id    = 2;
+    uint32 chunk_index  = 3; // 0-based
+    uint32 total_chunks = 4;
+    string data         = 5;
+}

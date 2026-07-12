@@ -29,3 +29,8 @@ HealthRequest.boot_reason max_size:32
 HealthRequest.fw_ver      max_size:32
 
 ConfigRequest.node_id max_size:32
+
+LogChunk.node_id max_size:32
+# Send-side chunk size is 512 bytes of raw log text; this leaves headroom
+# for nanopb's own length-prefix bookkeeping without needing to match exactly.
+LogChunk.data     max_size:600
