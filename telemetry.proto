@@ -115,6 +115,18 @@ message ConfigRequest {
 // HealthRequest -- looked up from the node_config table server-side.
 message ConfigResponse {
     uint32 main_app_delay = 1; // seconds between check-in cycles
+
+    // If true, a wake whose primary (SIM) connection fails to come up
+    // retries once over WiFi before giving up on the wake entirely. Doesn't
+    // change the primary connection method -- SIM is still tried first on
+    // every wake regardless of this flag.
+    bool wifi_backup_enabled = 2;
+
+    // Credentials for the WiFi backup connection above. Consumers may treat
+    // an empty value as "no change" and keep whatever WiFi credentials
+    // (build-time default or previously configured) they already have.
+    string wifi_ssid     = 3;
+    string wifi_password = 4;
 }
 
 // One chunk of the node's system.log file, sent right after HealthRequest

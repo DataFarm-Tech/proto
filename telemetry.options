@@ -30,6 +30,11 @@ HealthRequest.fw_ver      max_size:32
 
 ConfigRequest.node_id max_size:32
 
+# Matches wifi_config_t.sta.ssid/password (ESP-IDF's own limits: 32 bytes
+# for an SSID, 64 for a WPA2-PSK passphrase), plus a null terminator.
+ConfigResponse.wifi_ssid     max_size:33
+ConfigResponse.wifi_password max_size:65
+
 LogChunk.node_id max_size:32
 # Send-side chunk size is 512 bytes of raw log text; this leaves headroom
 # for nanopb's own length-prefix bookkeeping without needing to match exactly.

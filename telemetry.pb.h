@@ -118,6 +118,16 @@ typedef struct _ConfigRequest {
  HealthRequest -- looked up from the node_config table server-side. */
 typedef struct _ConfigResponse {
     uint32_t main_app_delay; /* seconds between check-in cycles */
+    /* If true, a wake whose primary (SIM) connection fails to come up
+ retries once over WiFi before giving up on the wake entirely. Doesn't
+ change the primary connection method -- SIM is still tried first on
+ every wake regardless of this flag. */
+    bool wifi_backup_enabled;
+    /* Credentials for the WiFi backup connection above. Consumers may treat
+ an empty value as "no change" and keep whatever WiFi credentials
+ (build-time default or previously configured) they already have. */
+    char wifi_ssid[33];
+    char wifi_password[65];
 } ConfigResponse;
 
 /* One chunk of the node's system.log file, sent right after HealthRequest
@@ -151,7 +161,7 @@ extern "C" {
 #define StringValue_init_default                 {""}
 #define HealthRequest_init_default               {"", "", ""}
 #define ConfigRequest_init_default               {""}
-#define ConfigResponse_init_default              {0}
+#define ConfigResponse_init_default              {0, 0, "", ""}
 #define LogChunk_init_default                    {"", 0, 0, 0, ""}
 #define ActivateRequest_init_zero                {"", false, Position_init_zero, false, Battery_init_zero, false, Manf_init_zero, false, NetInfo_init_zero}
 #define Manf_init_zero                           {"", "", ""}
@@ -165,7 +175,7 @@ extern "C" {
 #define StringValue_init_zero                    {""}
 #define HealthRequest_init_zero                  {"", "", ""}
 #define ConfigRequest_init_zero                  {""}
-#define ConfigResponse_init_zero                 {0}
+#define ConfigResponse_init_zero                 {0, 0, "", ""}
 #define LogChunk_init_zero                       {"", 0, 0, 0, ""}
 
 /* Field tags (for use in manual encoding/decoding) */
@@ -214,6 +224,9 @@ extern "C" {
 #define HealthRequest_fw_ver_tag                 3
 #define ConfigRequest_node_id_tag                1
 #define ConfigResponse_main_app_delay_tag        1
+#define ConfigResponse_wifi_backup_enabled_tag   2
+#define ConfigResponse_wifi_ssid_tag             3
+#define ConfigResponse_wifi_password_tag         4
 #define LogChunk_node_id_tag                     1
 #define LogChunk_upload_id_tag                   2
 #define LogChunk_chunk_index_tag                 3
@@ -322,7 +335,10 @@ X(a, STATIC,   SINGULAR, STRING,   node_id,           1)
 #define ConfigRequest_DEFAULT NULL
 
 #define ConfigResponse_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT32,   main_app_delay,    1)
+X(a, STATIC,   SINGULAR, UINT32,   main_app_delay,    1) \
+X(a, STATIC,   SINGULAR, BOOL,     wifi_backup_enabled,   2) \
+X(a, STATIC,   SINGULAR, STRING,   wifi_ssid,         3) \
+X(a, STATIC,   SINGULAR, STRING,   wifi_password,     4)
 #define ConfigResponse_CALLBACK NULL
 #define ConfigResponse_DEFAULT NULL
 
@@ -370,7 +386,7 @@ extern const pb_msgdesc_t LogChunk_msg;
 #define ActivateRequest_size                     238
 #define Battery_size                             17
 #define ConfigRequest_size                       33
-#define ConfigResponse_size                      6
+#define ConfigResponse_size                      108
 #define GpsUpdateRequest_size                    194
 #define HealthRequest_size                       99
 #define LogChunk_size                            653
