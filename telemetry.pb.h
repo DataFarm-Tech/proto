@@ -128,6 +128,15 @@ typedef struct _ConfigResponse {
  (build-time default or previously configured) they already have. */
     char wifi_ssid[33];
     char wifi_password[65];
+    /* Per-channel calibration factors applied to raw sensor readings.
+ Default to 1.0 (no adjustment) when not configured server-side. */
+    float conductivity_factor;
+    float moisture_factor;
+    float ph_factor;
+    float nitrogen_factor;
+    float phosphorus_factor;
+    float potassium_factor;
+    float temperature_factor;
 } ConfigResponse;
 
 /* One chunk of the node's system.log file, sent right after HealthRequest
@@ -161,7 +170,7 @@ extern "C" {
 #define StringValue_init_default                 {""}
 #define HealthRequest_init_default               {"", "", ""}
 #define ConfigRequest_init_default               {""}
-#define ConfigResponse_init_default              {0, 0, "", ""}
+#define ConfigResponse_init_default              {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0}
 #define LogChunk_init_default                    {"", 0, 0, 0, ""}
 #define ActivateRequest_init_zero                {"", false, Position_init_zero, false, Battery_init_zero, false, Manf_init_zero, false, NetInfo_init_zero}
 #define Manf_init_zero                           {"", "", ""}
@@ -175,7 +184,7 @@ extern "C" {
 #define StringValue_init_zero                    {""}
 #define HealthRequest_init_zero                  {"", "", ""}
 #define ConfigRequest_init_zero                  {""}
-#define ConfigResponse_init_zero                 {0, 0, "", ""}
+#define ConfigResponse_init_zero                 {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0}
 #define LogChunk_init_zero                       {"", 0, 0, 0, ""}
 
 /* Field tags (for use in manual encoding/decoding) */
@@ -227,6 +236,13 @@ extern "C" {
 #define ConfigResponse_wifi_backup_enabled_tag   2
 #define ConfigResponse_wifi_ssid_tag             3
 #define ConfigResponse_wifi_password_tag         4
+#define ConfigResponse_conductivity_factor_tag   5
+#define ConfigResponse_moisture_factor_tag       6
+#define ConfigResponse_ph_factor_tag             7
+#define ConfigResponse_nitrogen_factor_tag       8
+#define ConfigResponse_phosphorus_factor_tag     9
+#define ConfigResponse_potassium_factor_tag      10
+#define ConfigResponse_temperature_factor_tag    11
 #define LogChunk_node_id_tag                     1
 #define LogChunk_upload_id_tag                   2
 #define LogChunk_chunk_index_tag                 3
@@ -338,7 +354,14 @@ X(a, STATIC,   SINGULAR, STRING,   node_id,           1)
 X(a, STATIC,   SINGULAR, UINT32,   main_app_delay,    1) \
 X(a, STATIC,   SINGULAR, BOOL,     wifi_backup_enabled,   2) \
 X(a, STATIC,   SINGULAR, STRING,   wifi_ssid,         3) \
-X(a, STATIC,   SINGULAR, STRING,   wifi_password,     4)
+X(a, STATIC,   SINGULAR, STRING,   wifi_password,     4) \
+X(a, STATIC,   SINGULAR, FLOAT,    conductivity_factor,   5) \
+X(a, STATIC,   SINGULAR, FLOAT,    moisture_factor,   6) \
+X(a, STATIC,   SINGULAR, FLOAT,    ph_factor,         7) \
+X(a, STATIC,   SINGULAR, FLOAT,    nitrogen_factor,   8) \
+X(a, STATIC,   SINGULAR, FLOAT,    phosphorus_factor,   9) \
+X(a, STATIC,   SINGULAR, FLOAT,    potassium_factor,  10) \
+X(a, STATIC,   SINGULAR, FLOAT,    temperature_factor,  11)
 #define ConfigResponse_CALLBACK NULL
 #define ConfigResponse_DEFAULT NULL
 
@@ -386,7 +409,7 @@ extern const pb_msgdesc_t LogChunk_msg;
 #define ActivateRequest_size                     238
 #define Battery_size                             17
 #define ConfigRequest_size                       33
-#define ConfigResponse_size                      108
+#define ConfigResponse_size                      143
 #define GpsUpdateRequest_size                    194
 #define HealthRequest_size                       99
 #define LogChunk_size                            653

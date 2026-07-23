@@ -127,6 +127,16 @@ message ConfigResponse {
     // (build-time default or previously configured) they already have.
     string wifi_ssid     = 3;
     string wifi_password = 4;
+
+    // Per-channel calibration factors applied to raw sensor readings.
+    // Default to 1.0 (no adjustment) when not configured server-side.
+    float conductivity_factor = 5;
+    float moisture_factor     = 6;
+    float ph_factor           = 7;
+    float nitrogen_factor     = 8;
+    float phosphorus_factor   = 9;
+    float potassium_factor    = 10;
+    float temperature_factor  = 11;
 }
 
 // One chunk of the node's system.log file, sent right after HealthRequest
