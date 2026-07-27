@@ -104,6 +104,13 @@ typedef struct _HealthRequest {
     char node_id[32];
     char boot_reason[32]; /* e.g. "power-on", "deep sleep wake", "task watchdog" */
     char fw_ver[32];
+    /* Round-trip time of the *previous* cycle's health ping, in milliseconds
+ -- not this one. A request can't carry the RTT of its own not-yet-
+ received response, so the firmware times each ping's send-to-ACK
+ interval, stashes it in RTC memory (survives deep sleep), and reports
+ it one cycle later. 0 if no prior measurement is available yet (e.g.
+ first boot, or a cold power-on that cleared RTC memory). */
+    uint32_t rtt_ms;
 } HealthRequest;
 
 /* Sent alongside the GET to /config so the server knows which node's
@@ -168,7 +175,7 @@ extern "C" {
 #define NetStat_init_default                     {0, 0, "", {0, {0}}, 0, 0, 0}
 #define ReadingRequest_init_default              {"", "", 0, 0}
 #define StringValue_init_default                 {""}
-#define HealthRequest_init_default               {"", "", ""}
+#define HealthRequest_init_default               {"", "", "", 0}
 #define ConfigRequest_init_default               {""}
 #define ConfigResponse_init_default              {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0}
 #define LogChunk_init_default                    {"", 0, 0, 0, ""}
@@ -182,7 +189,7 @@ extern "C" {
 #define NetStat_init_zero                        {0, 0, "", {0, {0}}, 0, 0, 0}
 #define ReadingRequest_init_zero                 {"", "", 0, 0}
 #define StringValue_init_zero                    {""}
-#define HealthRequest_init_zero                  {"", "", ""}
+#define HealthRequest_init_zero                  {"", "", "", 0}
 #define ConfigRequest_init_zero                  {""}
 #define ConfigResponse_init_zero                 {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0}
 #define LogChunk_init_zero                       {"", 0, 0, 0, ""}
@@ -231,6 +238,7 @@ extern "C" {
 #define HealthRequest_node_id_tag                1
 #define HealthRequest_boot_reason_tag            2
 #define HealthRequest_fw_ver_tag                 3
+#define HealthRequest_rtt_ms_tag                 4
 #define ConfigRequest_node_id_tag                1
 #define ConfigResponse_main_app_delay_tag        1
 #define ConfigResponse_wifi_backup_enabled_tag   2
@@ -341,7 +349,8 @@ X(a, STATIC,   SINGULAR, STRING,   value,             1)
 #define HealthRequest_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, STRING,   node_id,           1) \
 X(a, STATIC,   SINGULAR, STRING,   boot_reason,       2) \
-X(a, STATIC,   SINGULAR, STRING,   fw_ver,            3)
+X(a, STATIC,   SINGULAR, STRING,   fw_ver,            3) \
+X(a, STATIC,   SINGULAR, UINT32,   rtt_ms,            4)
 #define HealthRequest_CALLBACK NULL
 #define HealthRequest_DEFAULT NULL
 
@@ -411,7 +420,7 @@ extern const pb_msgdesc_t LogChunk_msg;
 #define ConfigRequest_size                       33
 #define ConfigResponse_size                      143
 #define GpsUpdateRequest_size                    194
-#define HealthRequest_size                       99
+#define HealthRequest_size                       105
 #define LogChunk_size                            653
 #define Manf_size                                99
 #define NetInfo_size                             59

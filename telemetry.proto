@@ -101,6 +101,14 @@ message HealthRequest {
     string node_id     = 1;
     string boot_reason = 2; // e.g. "power-on", "deep sleep wake", "task watchdog"
     string fw_ver      = 3;
+
+    // Round-trip time of the *previous* cycle's health ping, in milliseconds
+    // -- not this one. A request can't carry the RTT of its own not-yet-
+    // received response, so the firmware times each ping's send-to-ACK
+    // interval, stashes it in RTC memory (survives deep sleep), and reports
+    // it one cycle later. 0 if no prior measurement is available yet (e.g.
+    // first boot, or a cold power-on that cleared RTC memory).
+    uint32 rtt_ms = 4;
 }
 
 // Sent alongside the GET to /config so the server knows which node's
