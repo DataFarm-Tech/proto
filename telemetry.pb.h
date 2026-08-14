@@ -44,17 +44,6 @@ typedef struct _NetInfo {
     char imsi[16];
 } NetInfo;
 
-/* protocol_version: on every device->server request message below, always
- at field number 7 for consistency across all of them (chosen as the
- lowest number free in every request message today, keeping it in the
- 1-15 single-byte-tag range). Distinct from Manf.fw_ver/OtaStatus.fw_ver
- -- those change on every firmware release; this should only bump when a
- change to this file would actually break wire compatibility with
- already-deployed firmware (see nitra#163). Proto3's zero-value default
- means firmware built before this field existed reports 0 for free, with
- no firmware change required to distinguish "pre-versioning" from "v1".
- Consumers don't yet branch on this -- see nitra#163 for the (unbuilt)
- backend version-branching half of this. */
 typedef struct _ActivateRequest {
     char node_id[32];
     bool has_position;
@@ -65,7 +54,6 @@ typedef struct _ActivateRequest {
     Manf manf;
     bool has_net_info;
     NetInfo net_info;
-    uint32_t protocol_version;
 } ActivateRequest;
 
 typedef PB_BYTES_ARRAY_T(8) NetStat_cell_id_t;
@@ -91,7 +79,6 @@ typedef struct _GpsUpdateRequest {
     OtaStatus firmware;
     bool has_net_stat;
     NetStat net_stat;
-    uint32_t protocol_version; /* see ActivateRequest's comment */
 } GpsUpdateRequest;
 
 typedef struct _ReadingRequest {
@@ -103,7 +90,6 @@ typedef struct _ReadingRequest {
  -- the server only classifies/persists this value, it no longer
  aggregates raw samples itself. */
     float reading;
-    uint32_t protocol_version; /* see ActivateRequest's comment */
 } ReadingRequest;
 
 typedef struct _StringValue {
@@ -125,7 +111,6 @@ typedef struct _HealthRequest {
  it one cycle later. 0 if no prior measurement is available yet (e.g.
  first boot, or a cold power-on that cleared RTC memory). */
     uint32_t rtt_ms;
-    uint32_t protocol_version; /* see ActivateRequest's comment */
 } HealthRequest;
 
 /* Sent alongside the GET to /config so the server knows which node's
@@ -134,7 +119,6 @@ typedef struct _HealthRequest {
  of the payload. */
 typedef struct _ConfigRequest {
     char node_id[32];
-    uint32_t protocol_version; /* see ActivateRequest's comment */
 } ConfigRequest;
 
 /* Node configuration fetched via a GET right after connecting, alongside
@@ -173,7 +157,6 @@ typedef struct _LogChunk {
     uint32_t chunk_index; /* 0-based */
     uint32_t total_chunks;
     char data[600];
-    uint32_t protocol_version; /* see ActivateRequest's comment */
 } LogChunk;
 
 
@@ -182,34 +165,34 @@ extern "C" {
 #endif
 
 /* Initializer values for message structs */
-#define ActivateRequest_init_default             {"", false, Position_init_default, false, Battery_init_default, false, Manf_init_default, false, NetInfo_init_default, 0}
+#define ActivateRequest_init_default             {"", false, Position_init_default, false, Battery_init_default, false, Manf_init_default, false, NetInfo_init_default}
 #define Manf_init_default                        {"", "", ""}
-#define GpsUpdateRequest_init_default            {"", false, Position_init_default, false, Battery_init_default, false, OtaStatus_init_default, false, NetStat_init_default, 0}
+#define GpsUpdateRequest_init_default            {"", false, Position_init_default, false, Battery_init_default, false, OtaStatus_init_default, false, NetStat_init_default}
 #define OtaStatus_init_default                   {"", 0, 0}
 #define Battery_init_default                     {0, 0, 0, 0}
 #define Position_init_default                    {0, 0, 0, 0, 0}
 #define NetInfo_init_default                     {"", "", ""}
 #define NetStat_init_default                     {0, 0, "", {0, {0}}, 0, 0, 0}
-#define ReadingRequest_init_default              {"", "", 0, 0, 0}
+#define ReadingRequest_init_default              {"", "", 0, 0}
 #define StringValue_init_default                 {""}
-#define HealthRequest_init_default               {"", "", "", 0, 0}
-#define ConfigRequest_init_default               {"", 0}
+#define HealthRequest_init_default               {"", "", "", 0}
+#define ConfigRequest_init_default               {""}
 #define ConfigResponse_init_default              {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0}
-#define LogChunk_init_default                    {"", 0, 0, 0, "", 0}
-#define ActivateRequest_init_zero                {"", false, Position_init_zero, false, Battery_init_zero, false, Manf_init_zero, false, NetInfo_init_zero, 0}
+#define LogChunk_init_default                    {"", 0, 0, 0, ""}
+#define ActivateRequest_init_zero                {"", false, Position_init_zero, false, Battery_init_zero, false, Manf_init_zero, false, NetInfo_init_zero}
 #define Manf_init_zero                           {"", "", ""}
-#define GpsUpdateRequest_init_zero               {"", false, Position_init_zero, false, Battery_init_zero, false, OtaStatus_init_zero, false, NetStat_init_zero, 0}
+#define GpsUpdateRequest_init_zero               {"", false, Position_init_zero, false, Battery_init_zero, false, OtaStatus_init_zero, false, NetStat_init_zero}
 #define OtaStatus_init_zero                      {"", 0, 0}
 #define Battery_init_zero                        {0, 0, 0, 0}
 #define Position_init_zero                       {0, 0, 0, 0, 0}
 #define NetInfo_init_zero                        {"", "", ""}
 #define NetStat_init_zero                        {0, 0, "", {0, {0}}, 0, 0, 0}
-#define ReadingRequest_init_zero                 {"", "", 0, 0, 0}
+#define ReadingRequest_init_zero                 {"", "", 0, 0}
 #define StringValue_init_zero                    {""}
-#define HealthRequest_init_zero                  {"", "", "", 0, 0}
-#define ConfigRequest_init_zero                  {"", 0}
+#define HealthRequest_init_zero                  {"", "", "", 0}
+#define ConfigRequest_init_zero                  {""}
 #define ConfigResponse_init_zero                 {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0}
-#define LogChunk_init_zero                       {"", 0, 0, 0, "", 0}
+#define LogChunk_init_zero                       {"", 0, 0, 0, ""}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define Manf_fw_ver_tag                          1
@@ -235,7 +218,6 @@ extern "C" {
 #define ActivateRequest_battery_tag              4
 #define ActivateRequest_manf_tag                 5
 #define ActivateRequest_net_info_tag             6
-#define ActivateRequest_protocol_version_tag     7
 #define NetStat_rsrq_tag                         1
 #define NetStat_sinr_tag                         2
 #define NetStat_carrier_tag                      3
@@ -248,20 +230,16 @@ extern "C" {
 #define GpsUpdateRequest_battery_tag             3
 #define GpsUpdateRequest_firmware_tag            4
 #define GpsUpdateRequest_net_stat_tag            5
-#define GpsUpdateRequest_protocol_version_tag    7
 #define ReadingRequest_node_id_tag               1
 #define ReadingRequest_m_type_tag                2
 #define ReadingRequest_session_tag               4
 #define ReadingRequest_reading_tag               5
-#define ReadingRequest_protocol_version_tag      7
 #define StringValue_value_tag                    1
 #define HealthRequest_node_id_tag                1
 #define HealthRequest_boot_reason_tag            2
 #define HealthRequest_fw_ver_tag                 3
 #define HealthRequest_rtt_ms_tag                 4
-#define HealthRequest_protocol_version_tag       7
 #define ConfigRequest_node_id_tag                1
-#define ConfigRequest_protocol_version_tag       7
 #define ConfigResponse_main_app_delay_tag        1
 #define ConfigResponse_wifi_backup_enabled_tag   2
 #define ConfigResponse_wifi_ssid_tag             3
@@ -278,7 +256,6 @@ extern "C" {
 #define LogChunk_chunk_index_tag                 3
 #define LogChunk_total_chunks_tag                4
 #define LogChunk_data_tag                        5
-#define LogChunk_protocol_version_tag            7
 
 /* Struct field encoding specification for nanopb */
 #define ActivateRequest_FIELDLIST(X, a) \
@@ -286,8 +263,7 @@ X(a, STATIC,   SINGULAR, STRING,   node_id,           1) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  position,          3) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  battery,           4) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  manf,              5) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  net_info,          6) \
-X(a, STATIC,   SINGULAR, UINT32,   protocol_version,   7)
+X(a, STATIC,   OPTIONAL, MESSAGE,  net_info,          6)
 #define ActivateRequest_CALLBACK NULL
 #define ActivateRequest_DEFAULT NULL
 #define ActivateRequest_position_MSGTYPE Position
@@ -307,8 +283,7 @@ X(a, STATIC,   SINGULAR, STRING,   node_id,           1) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  position,          2) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  battery,           3) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  firmware,          4) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  net_stat,          5) \
-X(a, STATIC,   SINGULAR, UINT32,   protocol_version,   7)
+X(a, STATIC,   OPTIONAL, MESSAGE,  net_stat,          5)
 #define GpsUpdateRequest_CALLBACK NULL
 #define GpsUpdateRequest_DEFAULT NULL
 #define GpsUpdateRequest_position_MSGTYPE Position
@@ -362,8 +337,7 @@ X(a, STATIC,   SINGULAR, UINT32,   rat,               7)
 X(a, STATIC,   SINGULAR, STRING,   node_id,           1) \
 X(a, STATIC,   SINGULAR, STRING,   m_type,            2) \
 X(a, STATIC,   SINGULAR, UINT64,   session,           4) \
-X(a, STATIC,   SINGULAR, FLOAT,    reading,           5) \
-X(a, STATIC,   SINGULAR, UINT32,   protocol_version,   7)
+X(a, STATIC,   SINGULAR, FLOAT,    reading,           5)
 #define ReadingRequest_CALLBACK NULL
 #define ReadingRequest_DEFAULT NULL
 
@@ -376,14 +350,12 @@ X(a, STATIC,   SINGULAR, STRING,   value,             1)
 X(a, STATIC,   SINGULAR, STRING,   node_id,           1) \
 X(a, STATIC,   SINGULAR, STRING,   boot_reason,       2) \
 X(a, STATIC,   SINGULAR, STRING,   fw_ver,            3) \
-X(a, STATIC,   SINGULAR, UINT32,   rtt_ms,            4) \
-X(a, STATIC,   SINGULAR, UINT32,   protocol_version,   7)
+X(a, STATIC,   SINGULAR, UINT32,   rtt_ms,            4)
 #define HealthRequest_CALLBACK NULL
 #define HealthRequest_DEFAULT NULL
 
 #define ConfigRequest_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, STRING,   node_id,           1) \
-X(a, STATIC,   SINGULAR, UINT32,   protocol_version,   7)
+X(a, STATIC,   SINGULAR, STRING,   node_id,           1)
 #define ConfigRequest_CALLBACK NULL
 #define ConfigRequest_DEFAULT NULL
 
@@ -407,8 +379,7 @@ X(a, STATIC,   SINGULAR, STRING,   node_id,           1) \
 X(a, STATIC,   SINGULAR, UINT32,   upload_id,         2) \
 X(a, STATIC,   SINGULAR, UINT32,   chunk_index,       3) \
 X(a, STATIC,   SINGULAR, UINT32,   total_chunks,      4) \
-X(a, STATIC,   SINGULAR, STRING,   data,              5) \
-X(a, STATIC,   SINGULAR, UINT32,   protocol_version,   7)
+X(a, STATIC,   SINGULAR, STRING,   data,              5)
 #define LogChunk_CALLBACK NULL
 #define LogChunk_DEFAULT NULL
 
@@ -444,19 +415,19 @@ extern const pb_msgdesc_t LogChunk_msg;
 #define LogChunk_fields &LogChunk_msg
 
 /* Maximum encoded size of messages (where known) */
-#define ActivateRequest_size                     244
+#define ActivateRequest_size                     238
 #define Battery_size                             17
-#define ConfigRequest_size                       39
+#define ConfigRequest_size                       33
 #define ConfigResponse_size                      143
-#define GpsUpdateRequest_size                    200
-#define HealthRequest_size                       111
-#define LogChunk_size                            659
+#define GpsUpdateRequest_size                    194
+#define HealthRequest_size                       105
+#define LogChunk_size                            653
 #define Manf_size                                99
 #define NetInfo_size                             59
 #define NetStat_size                             73
 #define OtaStatus_size                           41
 #define Position_size                            22
-#define ReadingRequest_size                      72
+#define ReadingRequest_size                      66
 #define StringValue_size                         514
 #define TELEMETRY_PB_H_MAX_SIZE                  LogChunk_size
 
