@@ -42,6 +42,9 @@ PB_BIND(HealthRequest, HealthRequest, AUTO)
 PB_BIND(ConfigRequest, ConfigRequest, AUTO)
 
 
+PB_BIND(FirmwareVersionRequest, FirmwareVersionRequest, AUTO)
+
+
 PB_BIND(ConfigResponse, ConfigResponse, AUTO)
 
 

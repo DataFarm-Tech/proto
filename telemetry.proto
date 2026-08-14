@@ -119,6 +119,16 @@ message ConfigRequest {
     string node_id = 1;
 }
 
+// Sent as the body of the firmware-version-check request (a CoAP FETCH, not
+// a bare GET -- Californium's OSCORE layer rejects a payload on GET/DELETE
+// when reconstructing the decrypted inner request, same reason ConfigRequest
+// travels over FETCH rather than GET) so the server can refuse to offer an
+// update to hardware the latest release no longer supports, instead of
+// unconditionally handing back the newest version regardless of hw_ver.
+message FirmwareVersionRequest {
+    string hw_ver = 1;
+}
+
 // Node configuration fetched via a GET right after connecting, alongside
 // HealthRequest -- looked up from the node_config table server-side.
 message ConfigResponse {

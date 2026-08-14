@@ -121,6 +121,16 @@ typedef struct _ConfigRequest {
     char node_id[32];
 } ConfigRequest;
 
+/* Sent as the body of the firmware-version-check request (a CoAP FETCH, not
+ a bare GET -- Californium's OSCORE layer rejects a payload on GET/DELETE
+ when reconstructing the decrypted inner request, same reason ConfigRequest
+ travels over FETCH rather than GET) so the server can refuse to offer an
+ update to hardware the latest release no longer supports, instead of
+ unconditionally handing back the newest version regardless of hw_ver. */
+typedef struct _FirmwareVersionRequest {
+    char hw_ver[32];
+} FirmwareVersionRequest;
+
 /* Node configuration fetched via a GET right after connecting, alongside
  HealthRequest -- looked up from the node_config table server-side. */
 typedef struct _ConfigResponse {
@@ -177,6 +187,7 @@ extern "C" {
 #define StringValue_init_default                 {""}
 #define HealthRequest_init_default               {"", "", "", 0}
 #define ConfigRequest_init_default               {""}
+#define FirmwareVersionRequest_init_default      {""}
 #define ConfigResponse_init_default              {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0}
 #define LogChunk_init_default                    {"", 0, 0, 0, ""}
 #define ActivateRequest_init_zero                {"", false, Position_init_zero, false, Battery_init_zero, false, Manf_init_zero, false, NetInfo_init_zero}
@@ -191,6 +202,7 @@ extern "C" {
 #define StringValue_init_zero                    {""}
 #define HealthRequest_init_zero                  {"", "", "", 0}
 #define ConfigRequest_init_zero                  {""}
+#define FirmwareVersionRequest_init_zero         {""}
 #define ConfigResponse_init_zero                 {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0}
 #define LogChunk_init_zero                       {"", 0, 0, 0, ""}
 
@@ -240,6 +252,7 @@ extern "C" {
 #define HealthRequest_fw_ver_tag                 3
 #define HealthRequest_rtt_ms_tag                 4
 #define ConfigRequest_node_id_tag                1
+#define FirmwareVersionRequest_hw_ver_tag        1
 #define ConfigResponse_main_app_delay_tag        1
 #define ConfigResponse_wifi_backup_enabled_tag   2
 #define ConfigResponse_wifi_ssid_tag             3
@@ -359,6 +372,11 @@ X(a, STATIC,   SINGULAR, STRING,   node_id,           1)
 #define ConfigRequest_CALLBACK NULL
 #define ConfigRequest_DEFAULT NULL
 
+#define FirmwareVersionRequest_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, STRING,   hw_ver,            1)
+#define FirmwareVersionRequest_CALLBACK NULL
+#define FirmwareVersionRequest_DEFAULT NULL
+
 #define ConfigResponse_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UINT32,   main_app_delay,    1) \
 X(a, STATIC,   SINGULAR, BOOL,     wifi_backup_enabled,   2) \
@@ -395,6 +413,7 @@ extern const pb_msgdesc_t ReadingRequest_msg;
 extern const pb_msgdesc_t StringValue_msg;
 extern const pb_msgdesc_t HealthRequest_msg;
 extern const pb_msgdesc_t ConfigRequest_msg;
+extern const pb_msgdesc_t FirmwareVersionRequest_msg;
 extern const pb_msgdesc_t ConfigResponse_msg;
 extern const pb_msgdesc_t LogChunk_msg;
 
@@ -411,6 +430,7 @@ extern const pb_msgdesc_t LogChunk_msg;
 #define StringValue_fields &StringValue_msg
 #define HealthRequest_fields &HealthRequest_msg
 #define ConfigRequest_fields &ConfigRequest_msg
+#define FirmwareVersionRequest_fields &FirmwareVersionRequest_msg
 #define ConfigResponse_fields &ConfigResponse_msg
 #define LogChunk_fields &LogChunk_msg
 
@@ -419,6 +439,7 @@ extern const pb_msgdesc_t LogChunk_msg;
 #define Battery_size                             17
 #define ConfigRequest_size                       33
 #define ConfigResponse_size                      143
+#define FirmwareVersionRequest_size              33
 #define GpsUpdateRequest_size                    194
 #define HealthRequest_size                       105
 #define LogChunk_size                            653
