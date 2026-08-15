@@ -10,12 +10,6 @@
 #endif
 
 /* Struct definitions */
-typedef struct _Manf {
-    char fw_ver[32];
-    char hw_ver[32];
-    char chassis_ver[32];
-} Manf;
-
 typedef struct _OtaStatus {
     char fw_ver[32];
     bool just_updated;
@@ -44,18 +38,6 @@ typedef struct _NetInfo {
     char imsi[16];
 } NetInfo;
 
-typedef struct _ActivateRequest {
-    char node_id[32];
-    bool has_position;
-    Position position;
-    bool has_battery;
-    Battery battery;
-    bool has_manf;
-    Manf manf;
-    bool has_net_info;
-    NetInfo net_info;
-} ActivateRequest;
-
 typedef PB_BYTES_ARRAY_T(8) NetStat_cell_id_t;
 /* Which cell/network the device is on right now, and how good that connection is —
  travels with each GpsUpdateRequest so it can be correlated with position over time. */
@@ -69,6 +51,11 @@ typedef struct _NetStat {
     uint32_t rat;
 } NetStat;
 
+/* Manufacturing/hardware identity that used to travel only in the
+ now-removed ActivateRequest (see nitra#162) -- since node_hw_metadata is
+ created once (insert-if-missing, see process_gps), sending these on
+ every GpsUpdateRequest costs nothing but a few bytes and means there's no
+ separate first-contact message to keep in sync. */
 typedef struct _GpsUpdateRequest {
     char node_id[32];
     bool has_position;
@@ -79,6 +66,10 @@ typedef struct _GpsUpdateRequest {
     OtaStatus firmware;
     bool has_net_stat;
     NetStat net_stat;
+    char hw_ver[32];
+    char chassis_ver[32];
+    bool has_net_info;
+    NetInfo net_info;
 } GpsUpdateRequest;
 
 typedef struct _ReadingRequest {
@@ -175,9 +166,7 @@ extern "C" {
 #endif
 
 /* Initializer values for message structs */
-#define ActivateRequest_init_default             {"", false, Position_init_default, false, Battery_init_default, false, Manf_init_default, false, NetInfo_init_default}
-#define Manf_init_default                        {"", "", ""}
-#define GpsUpdateRequest_init_default            {"", false, Position_init_default, false, Battery_init_default, false, OtaStatus_init_default, false, NetStat_init_default}
+#define GpsUpdateRequest_init_default            {"", false, Position_init_default, false, Battery_init_default, false, OtaStatus_init_default, false, NetStat_init_default, "", "", false, NetInfo_init_default}
 #define OtaStatus_init_default                   {"", 0, 0}
 #define Battery_init_default                     {0, 0, 0, 0}
 #define Position_init_default                    {0, 0, 0, 0, 0}
@@ -190,9 +179,7 @@ extern "C" {
 #define FirmwareVersionRequest_init_default      {""}
 #define ConfigResponse_init_default              {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0}
 #define LogChunk_init_default                    {"", 0, 0, 0, ""}
-#define ActivateRequest_init_zero                {"", false, Position_init_zero, false, Battery_init_zero, false, Manf_init_zero, false, NetInfo_init_zero}
-#define Manf_init_zero                           {"", "", ""}
-#define GpsUpdateRequest_init_zero               {"", false, Position_init_zero, false, Battery_init_zero, false, OtaStatus_init_zero, false, NetStat_init_zero}
+#define GpsUpdateRequest_init_zero               {"", false, Position_init_zero, false, Battery_init_zero, false, OtaStatus_init_zero, false, NetStat_init_zero, "", "", false, NetInfo_init_zero}
 #define OtaStatus_init_zero                      {"", 0, 0}
 #define Battery_init_zero                        {0, 0, 0, 0}
 #define Position_init_zero                       {0, 0, 0, 0, 0}
@@ -207,9 +194,6 @@ extern "C" {
 #define LogChunk_init_zero                       {"", 0, 0, 0, ""}
 
 /* Field tags (for use in manual encoding/decoding) */
-#define Manf_fw_ver_tag                          1
-#define Manf_hw_ver_tag                          2
-#define Manf_chassis_ver_tag                     3
 #define OtaStatus_fw_ver_tag                     1
 #define OtaStatus_just_updated_tag               2
 #define OtaStatus_boot_count_tag                 3
@@ -225,11 +209,6 @@ extern "C" {
 #define NetInfo_iccid_tag                        1
 #define NetInfo_imei_tag                         2
 #define NetInfo_imsi_tag                         3
-#define ActivateRequest_node_id_tag              1
-#define ActivateRequest_position_tag             3
-#define ActivateRequest_battery_tag              4
-#define ActivateRequest_manf_tag                 5
-#define ActivateRequest_net_info_tag             6
 #define NetStat_rsrq_tag                         1
 #define NetStat_sinr_tag                         2
 #define NetStat_carrier_tag                      3
@@ -242,6 +221,9 @@ extern "C" {
 #define GpsUpdateRequest_battery_tag             3
 #define GpsUpdateRequest_firmware_tag            4
 #define GpsUpdateRequest_net_stat_tag            5
+#define GpsUpdateRequest_hw_ver_tag              6
+#define GpsUpdateRequest_chassis_ver_tag         7
+#define GpsUpdateRequest_net_info_tag            8
 #define ReadingRequest_node_id_tag               1
 #define ReadingRequest_m_type_tag                2
 #define ReadingRequest_session_tag               4
@@ -271,38 +253,22 @@ extern "C" {
 #define LogChunk_data_tag                        5
 
 /* Struct field encoding specification for nanopb */
-#define ActivateRequest_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, STRING,   node_id,           1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  position,          3) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  battery,           4) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  manf,              5) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  net_info,          6)
-#define ActivateRequest_CALLBACK NULL
-#define ActivateRequest_DEFAULT NULL
-#define ActivateRequest_position_MSGTYPE Position
-#define ActivateRequest_battery_MSGTYPE Battery
-#define ActivateRequest_manf_MSGTYPE Manf
-#define ActivateRequest_net_info_MSGTYPE NetInfo
-
-#define Manf_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, STRING,   fw_ver,            1) \
-X(a, STATIC,   SINGULAR, STRING,   hw_ver,            2) \
-X(a, STATIC,   SINGULAR, STRING,   chassis_ver,       3)
-#define Manf_CALLBACK NULL
-#define Manf_DEFAULT NULL
-
 #define GpsUpdateRequest_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, STRING,   node_id,           1) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  position,          2) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  battery,           3) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  firmware,          4) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  net_stat,          5)
+X(a, STATIC,   OPTIONAL, MESSAGE,  net_stat,          5) \
+X(a, STATIC,   SINGULAR, STRING,   hw_ver,            6) \
+X(a, STATIC,   SINGULAR, STRING,   chassis_ver,       7) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  net_info,          8)
 #define GpsUpdateRequest_CALLBACK NULL
 #define GpsUpdateRequest_DEFAULT NULL
 #define GpsUpdateRequest_position_MSGTYPE Position
 #define GpsUpdateRequest_battery_MSGTYPE Battery
 #define GpsUpdateRequest_firmware_MSGTYPE OtaStatus
 #define GpsUpdateRequest_net_stat_MSGTYPE NetStat
+#define GpsUpdateRequest_net_info_MSGTYPE NetInfo
 
 #define OtaStatus_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, STRING,   fw_ver,            1) \
@@ -401,8 +367,6 @@ X(a, STATIC,   SINGULAR, STRING,   data,              5)
 #define LogChunk_CALLBACK NULL
 #define LogChunk_DEFAULT NULL
 
-extern const pb_msgdesc_t ActivateRequest_msg;
-extern const pb_msgdesc_t Manf_msg;
 extern const pb_msgdesc_t GpsUpdateRequest_msg;
 extern const pb_msgdesc_t OtaStatus_msg;
 extern const pb_msgdesc_t Battery_msg;
@@ -418,8 +382,6 @@ extern const pb_msgdesc_t ConfigResponse_msg;
 extern const pb_msgdesc_t LogChunk_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
-#define ActivateRequest_fields &ActivateRequest_msg
-#define Manf_fields &Manf_msg
 #define GpsUpdateRequest_fields &GpsUpdateRequest_msg
 #define OtaStatus_fields &OtaStatus_msg
 #define Battery_fields &Battery_msg
@@ -435,15 +397,13 @@ extern const pb_msgdesc_t LogChunk_msg;
 #define LogChunk_fields &LogChunk_msg
 
 /* Maximum encoded size of messages (where known) */
-#define ActivateRequest_size                     238
 #define Battery_size                             17
 #define ConfigRequest_size                       33
 #define ConfigResponse_size                      143
 #define FirmwareVersionRequest_size              33
-#define GpsUpdateRequest_size                    194
+#define GpsUpdateRequest_size                    321
 #define HealthRequest_size                       105
 #define LogChunk_size                            653
-#define Manf_size                                99
 #define NetInfo_size                             59
 #define NetStat_size                             73
 #define OtaStatus_size                           41

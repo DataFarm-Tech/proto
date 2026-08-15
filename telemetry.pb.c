@@ -6,13 +6,7 @@
 #error Regenerate this file with the current version of nanopb generator.
 #endif
 
-PB_BIND(ActivateRequest, ActivateRequest, AUTO)
-
-
-PB_BIND(Manf, Manf, AUTO)
-
-
-PB_BIND(GpsUpdateRequest, GpsUpdateRequest, AUTO)
+PB_BIND(GpsUpdateRequest, GpsUpdateRequest, 2)
 
 
 PB_BIND(OtaStatus, OtaStatus, AUTO)

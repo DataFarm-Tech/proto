@@ -13,26 +13,20 @@ syntax = "proto3";
 option java_package = "com.datafarmtech.telemetry";
 option java_multiple_files = true;
 
-message ActivateRequest {
-    string   node_id   = 1;
-    Position position  = 3;
-    Battery  battery   = 4;
-    Manf     manf      = 5;
-    NetInfo  net_info  = 6;
-}
-
-message Manf {
-  string fw_ver      = 1;
-  string hw_ver      = 2;
-  string chassis_ver = 3;
-}
-
+// Manufacturing/hardware identity that used to travel only in the
+// now-removed ActivateRequest (see nitra#162) -- since node_hw_metadata is
+// created once (insert-if-missing, see process_gps), sending these on
+// every GpsUpdateRequest costs nothing but a few bytes and means there's no
+// separate first-contact message to keep in sync.
 message GpsUpdateRequest {
     string   node_id  = 1;
     Position position = 2;
     Battery  battery  = 3;
     OtaStatus firmware = 4;
     NetStat  net_stat = 5;
+    string   hw_ver      = 6;
+    string   chassis_ver = 7;
+    NetInfo  net_info    = 8;
 }
 
 message OtaStatus {
