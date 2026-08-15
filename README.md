@@ -14,9 +14,9 @@ Shared [Protocol Buffers](https://protobuf.dev/) schema for the CoAP telemetry p
 
 | Message | Direction | Sent on |
 | --- | --- | --- |
-| `ActivateRequest` | device → server | `POST /activate` |
-| `GpsUpdateRequest` | device → server | `PUT /gps-update` |
+| `GpsUpdateRequest` | device → server | `PUT /gps-update` -- also carries manufacturing/hardware identity (`hw_ver`/`chassis_ver`/`net_info`), folded in from the now-removed `ActivateRequest` (see [nitra#162](https://github.com/DataFarm-Tech/nitra/issues/162)) |
 | `ReadingRequest` | device → server | `POST /reading` |
+| `FirmwareVersionRequest` | device → server | `GET /firmware-version` -- carries `hw_ver` so the server can refuse to offer an update to unsupported hardware |
 | `StringValue` | server → device | `GET /firmware-version`, `GET /firmware-download` responses |
 
 `StringValue` is a generic single-field wrapper reused for both OTA response endpoints, which each return a single opaque string (a version string or an HTTPS URL, respectively).
