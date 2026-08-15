@@ -103,6 +103,15 @@ message HealthRequest {
     // it one cycle later. 0 if no prior measurement is available yet (e.g.
     // first boot, or a cold power-on that cleared RTC memory).
     uint32 rtt_ms = 4;
+
+    // Free-heap low-water-mark (bytes) from the *previous* wake cycle, same
+    // one-cycle-delayed reporting as rtt_ms and for the same reason: this
+    // ping fires early (right after connect, before OTA/GPS/collection/log
+    // upload -- the cycle's actual memory-heavy work), so its own cycle's
+    // minimum isn't known yet. Captured instead right before the previous
+    // cycle's deep sleep, once everything had run, and stashed in RTC memory.
+    // 0 if no prior measurement is available yet.
+    uint32 prev_cycle_min_free_bytes = 5;
 }
 
 // Sent alongside the GET to /config so the server knows which node's
