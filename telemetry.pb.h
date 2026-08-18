@@ -9,6 +9,12 @@
 #error Regenerate this file with the current version of nanopb generator.
 #endif
 
+/* Enum definitions */
+typedef enum _RATType {
+    RATType_LTE_M = 0, /* LTE-M (Cat-M1) cellular RAT */
+    RATType_NB_IoT = 1 /* NB-IoT (Cat-NB1) cellular RAT */
+} RATType;
+
 /* Struct definitions */
 typedef struct _OtaStatus {
     char fw_ver[32];
@@ -153,6 +159,7 @@ typedef struct _ConfigResponse {
     float phosphorus_factor;
     float potassium_factor;
     float temperature_factor;
+    RATType rat_type;
 } ConfigResponse;
 
 /* One chunk of the node's system.log file, sent right after HealthRequest
@@ -173,6 +180,26 @@ typedef struct _LogChunk {
 extern "C" {
 #endif
 
+/* Helper constants for enums */
+#define _RATType_MIN RATType_LTE_M
+#define _RATType_MAX RATType_NB_IoT
+#define _RATType_ARRAYSIZE ((RATType)(RATType_NB_IoT+1))
+
+
+
+
+
+
+
+
+
+
+
+
+#define ConfigResponse_rat_type_ENUMTYPE RATType
+
+
+
 /* Initializer values for message structs */
 #define GpsUpdateRequest_init_default            {"", false, Position_init_default, false, Battery_init_default, false, OtaStatus_init_default, false, NetStat_init_default, "", "", false, NetInfo_init_default}
 #define OtaStatus_init_default                   {"", 0, 0}
@@ -185,7 +212,7 @@ extern "C" {
 #define HealthRequest_init_default               {"", "", "", 0, 0}
 #define ConfigRequest_init_default               {""}
 #define FirmwareVersionRequest_init_default      {""}
-#define ConfigResponse_init_default              {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0}
+#define ConfigResponse_init_default              {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0, _RATType_MIN}
 #define LogChunk_init_default                    {"", 0, 0, 0, ""}
 #define GpsUpdateRequest_init_zero               {"", false, Position_init_zero, false, Battery_init_zero, false, OtaStatus_init_zero, false, NetStat_init_zero, "", "", false, NetInfo_init_zero}
 #define OtaStatus_init_zero                      {"", 0, 0}
@@ -198,7 +225,7 @@ extern "C" {
 #define HealthRequest_init_zero                  {"", "", "", 0, 0}
 #define ConfigRequest_init_zero                  {""}
 #define FirmwareVersionRequest_init_zero         {""}
-#define ConfigResponse_init_zero                 {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0}
+#define ConfigResponse_init_zero                 {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0, _RATType_MIN}
 #define LogChunk_init_zero                       {"", 0, 0, 0, ""}
 
 /* Field tags (for use in manual encoding/decoding) */
@@ -255,6 +282,7 @@ extern "C" {
 #define ConfigResponse_phosphorus_factor_tag     9
 #define ConfigResponse_potassium_factor_tag      10
 #define ConfigResponse_temperature_factor_tag    11
+#define ConfigResponse_rat_type_tag              12
 #define LogChunk_node_id_tag                     1
 #define LogChunk_upload_id_tag                   2
 #define LogChunk_chunk_index_tag                 3
@@ -364,7 +392,8 @@ X(a, STATIC,   SINGULAR, FLOAT,    ph_factor,         7) \
 X(a, STATIC,   SINGULAR, FLOAT,    nitrogen_factor,   8) \
 X(a, STATIC,   SINGULAR, FLOAT,    phosphorus_factor,   9) \
 X(a, STATIC,   SINGULAR, FLOAT,    potassium_factor,  10) \
-X(a, STATIC,   SINGULAR, FLOAT,    temperature_factor,  11)
+X(a, STATIC,   SINGULAR, FLOAT,    temperature_factor,  11) \
+X(a, STATIC,   SINGULAR, UENUM,    rat_type,         12)
 #define ConfigResponse_CALLBACK NULL
 #define ConfigResponse_DEFAULT NULL
 
@@ -409,7 +438,7 @@ extern const pb_msgdesc_t LogChunk_msg;
 /* Maximum encoded size of messages (where known) */
 #define Battery_size                             17
 #define ConfigRequest_size                       33
-#define ConfigResponse_size                      143
+#define ConfigResponse_size                      145
 #define FirmwareVersionRequest_size              33
 #define GpsUpdateRequest_size                    321
 #define HealthRequest_size                       111

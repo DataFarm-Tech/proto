@@ -158,6 +158,12 @@ message ConfigResponse {
     float phosphorus_factor   = 9;
     float potassium_factor    = 10;
     float temperature_factor  = 11;
+    RATType rat_type = 12;
+}
+
+enum RATType {
+    LTE_M = 0;  // LTE-M (Cat-M1) cellular RAT
+    NB_IoT = 1; // NB-IoT (Cat-NB1) cellular RAT
 }
 
 // One chunk of the node's system.log file, sent right after HealthRequest
