@@ -112,6 +112,13 @@ message HealthRequest {
     // cycle's deep sleep, once everything had run, and stashed in RTC memory.
     // 0 if no prior measurement is available yet.
     uint32 prev_cycle_min_free_bytes = 5;
+
+    // LittleFS bytes in use (see the "littlefs" partition) as of the
+    // *previous* wake cycle -- same one-cycle-delayed reporting as
+    // prev_cycle_min_free_bytes and for the same reason. 0 if no prior
+    // measurement is available yet, or if the filesystem wasn't mounted at
+    // capture time.
+    uint32 prev_cycle_fs_used_bytes = 6;
 }
 
 // Sent alongside the GET to /config so the server knows which node's

@@ -116,6 +116,12 @@ typedef struct _HealthRequest {
  cycle's deep sleep, once everything had run, and stashed in RTC memory.
  0 if no prior measurement is available yet. */
     uint32_t prev_cycle_min_free_bytes;
+    /* LittleFS bytes in use (see the "littlefs" partition) as of the
+ *previous* wake cycle -- same one-cycle-delayed reporting as
+ prev_cycle_min_free_bytes and for the same reason. 0 if no prior
+ measurement is available yet, or if the filesystem wasn't mounted at
+ capture time. */
+    uint32_t prev_cycle_fs_used_bytes;
 } HealthRequest;
 
 /* Sent alongside the GET to /config so the server knows which node's
@@ -209,7 +215,7 @@ extern "C" {
 #define NetStat_init_default                     {0, 0, "", {0, {0}}, 0, 0, 0}
 #define ReadingRequest_init_default              {"", "", 0, 0}
 #define StringValue_init_default                 {""}
-#define HealthRequest_init_default               {"", "", "", 0, 0}
+#define HealthRequest_init_default               {"", "", "", 0, 0, 0}
 #define ConfigRequest_init_default               {""}
 #define FirmwareVersionRequest_init_default      {""}
 #define ConfigResponse_init_default              {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0, _RATType_MIN}
@@ -222,7 +228,7 @@ extern "C" {
 #define NetStat_init_zero                        {0, 0, "", {0, {0}}, 0, 0, 0}
 #define ReadingRequest_init_zero                 {"", "", 0, 0}
 #define StringValue_init_zero                    {""}
-#define HealthRequest_init_zero                  {"", "", "", 0, 0}
+#define HealthRequest_init_zero                  {"", "", "", 0, 0, 0}
 #define ConfigRequest_init_zero                  {""}
 #define FirmwareVersionRequest_init_zero         {""}
 #define ConfigResponse_init_zero                 {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0, _RATType_MIN}
@@ -269,6 +275,7 @@ extern "C" {
 #define HealthRequest_fw_ver_tag                 3
 #define HealthRequest_rtt_ms_tag                 4
 #define HealthRequest_prev_cycle_min_free_bytes_tag 5
+#define HealthRequest_prev_cycle_fs_used_bytes_tag 6
 #define ConfigRequest_node_id_tag                1
 #define FirmwareVersionRequest_hw_ver_tag        1
 #define ConfigResponse_main_app_delay_tag        1
@@ -367,7 +374,8 @@ X(a, STATIC,   SINGULAR, STRING,   node_id,           1) \
 X(a, STATIC,   SINGULAR, STRING,   boot_reason,       2) \
 X(a, STATIC,   SINGULAR, STRING,   fw_ver,            3) \
 X(a, STATIC,   SINGULAR, UINT32,   rtt_ms,            4) \
-X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_min_free_bytes,   5)
+X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_min_free_bytes,   5) \
+X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_fs_used_bytes,   6)
 #define HealthRequest_CALLBACK NULL
 #define HealthRequest_DEFAULT NULL
 
@@ -441,7 +449,7 @@ extern const pb_msgdesc_t LogChunk_msg;
 #define ConfigResponse_size                      145
 #define FirmwareVersionRequest_size              33
 #define GpsUpdateRequest_size                    321
-#define HealthRequest_size                       111
+#define HealthRequest_size                       117
 #define LogChunk_size                            653
 #define NetInfo_size                             59
 #define NetStat_size                             73
