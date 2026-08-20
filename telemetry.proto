@@ -119,6 +119,15 @@ message HealthRequest {
     // measurement is available yet, or if the filesystem wasn't mounted at
     // capture time.
     uint32 prev_cycle_fs_used_bytes = 6;
+
+    // Count of response-waiting CoAP exchanges (Health, Config fetch,
+    // firmware-version check -- see RttTracker.hpp in the firmware) the
+    // *previous* cycle attempted, and how many of those actually got a
+    // response, same one-cycle-delayed reporting as the fields above and
+    // for the same reason. succeeded/attempted is a real packet-loss
+    // figure for that cycle; 0/0 if no prior cycle data is available yet.
+    uint32 prev_cycle_exchanges_attempted = 7;
+    uint32 prev_cycle_exchanges_succeeded = 8;
 }
 
 // Sent alongside the GET to /config so the server knows which node's
