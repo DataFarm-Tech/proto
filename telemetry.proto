@@ -175,6 +175,12 @@ message ConfigResponse {
     float potassium_factor    = 10;
     float temperature_factor  = 11;
     RATType rat_type = 12;
+
+    // If true, GPS acquisition runs on every wake instead of the default
+    // once-a-week throttle (see AppRuntime::runCycle()'s should_trigger_gps).
+    // Costs real time (30-90+s per fix, longer cold) and power every cycle --
+    // off by default.
+    bool gps_every_cycle = 13;
 }
 
 enum RATType {
