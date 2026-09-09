@@ -200,3 +200,20 @@ message LogChunk {
     uint32 total_chunks = 4;
     string data         = 5;
 }
+
+// One GPS+signal snapshot recorded by the CLI's `walktest` command, sent to
+// its own dedicated endpoint (not update-gps) once the recording window
+// closes -- one WalkTestPoint per point recorded, sent back-to-back rather
+// than a single batched/repeated-field message. Deliberately slimmer than
+// GpsUpdateRequest: no battery/OTA/manufacturing-identity fields, since a
+// walk test around a property is a one-off diagnostic session, not part of
+// the regular telemetry stream.
+message WalkTestPoint {
+    string   node_id   = 1;
+    Position position  = 2;
+    NetStat  net_stat  = 3;
+    // Unix epoch seconds this point was recorded -- separate from
+    // position.fix_time, which is the GPS fix's own timestamp and is stale/
+    // meaningless when position.fix_valid is false (no real fix that cycle).
+    fixed32  timestamp = 4;
+}

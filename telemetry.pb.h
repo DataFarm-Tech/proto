@@ -192,6 +192,22 @@ typedef struct _LogChunk {
     char data[600];
 } LogChunk;
 
+/* One GPS+signal snapshot recorded by the CLI's `walktest` command, sent to
+ its own dedicated endpoint (not update-gps) once the recording window
+ closes -- one WalkTestPoint per point recorded, sent back-to-back rather
+ than a single batched/repeated-field message. */
+typedef struct _WalkTestPoint {
+    char node_id[32];
+    bool has_position;
+    Position position;
+    bool has_net_stat;
+    NetStat net_stat;
+    /* Unix epoch seconds this point was recorded -- separate from
+ position.fix_time, which is the GPS fix's own timestamp and is stale/
+ meaningless when position.fix_valid is false (no real fix that cycle). */
+    uint32_t timestamp;
+} WalkTestPoint;
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -231,6 +247,7 @@ extern "C" {
 #define FirmwareVersionRequest_init_default      {""}
 #define ConfigResponse_init_default              {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0}
 #define LogChunk_init_default                    {"", 0, 0, 0, ""}
+#define WalkTestPoint_init_default               {"", false, Position_init_default, false, NetStat_init_default, 0}
 #define GpsUpdateRequest_init_zero               {"", false, Position_init_zero, false, Battery_init_zero, false, OtaStatus_init_zero, false, NetStat_init_zero, "", "", false, NetInfo_init_zero}
 #define OtaStatus_init_zero                      {"", 0, 0}
 #define Battery_init_zero                        {0, 0, 0, 0}
@@ -244,6 +261,7 @@ extern "C" {
 #define FirmwareVersionRequest_init_zero         {""}
 #define ConfigResponse_init_zero                 {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0}
 #define LogChunk_init_zero                       {"", 0, 0, 0, ""}
+#define WalkTestPoint_init_zero                  {"", false, Position_init_zero, false, NetStat_init_zero, 0}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define OtaStatus_fw_ver_tag                     1
@@ -309,6 +327,10 @@ extern "C" {
 #define LogChunk_chunk_index_tag                 3
 #define LogChunk_total_chunks_tag                4
 #define LogChunk_data_tag                        5
+#define WalkTestPoint_node_id_tag                1
+#define WalkTestPoint_position_tag               2
+#define WalkTestPoint_net_stat_tag               3
+#define WalkTestPoint_timestamp_tag              4
 
 /* Struct field encoding specification for nanopb */
 #define GpsUpdateRequest_FIELDLIST(X, a) \
@@ -431,6 +453,16 @@ X(a, STATIC,   SINGULAR, STRING,   data,              5)
 #define LogChunk_CALLBACK NULL
 #define LogChunk_DEFAULT NULL
 
+#define WalkTestPoint_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, STRING,   node_id,           1) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  position,          2) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  net_stat,          3) \
+X(a, STATIC,   SINGULAR, FIXED32,  timestamp,         4)
+#define WalkTestPoint_CALLBACK NULL
+#define WalkTestPoint_DEFAULT NULL
+#define WalkTestPoint_position_MSGTYPE Position
+#define WalkTestPoint_net_stat_MSGTYPE NetStat
+
 extern const pb_msgdesc_t GpsUpdateRequest_msg;
 extern const pb_msgdesc_t OtaStatus_msg;
 extern const pb_msgdesc_t Battery_msg;
@@ -444,6 +476,7 @@ extern const pb_msgdesc_t ConfigRequest_msg;
 extern const pb_msgdesc_t FirmwareVersionRequest_msg;
 extern const pb_msgdesc_t ConfigResponse_msg;
 extern const pb_msgdesc_t LogChunk_msg;
+extern const pb_msgdesc_t WalkTestPoint_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define GpsUpdateRequest_fields &GpsUpdateRequest_msg
@@ -459,6 +492,7 @@ extern const pb_msgdesc_t LogChunk_msg;
 #define FirmwareVersionRequest_fields &FirmwareVersionRequest_msg
 #define ConfigResponse_fields &ConfigResponse_msg
 #define LogChunk_fields &LogChunk_msg
+#define WalkTestPoint_fields &WalkTestPoint_msg
 
 /* Maximum encoded size of messages (where known) */
 #define Battery_size                             17
@@ -474,6 +508,7 @@ extern const pb_msgdesc_t LogChunk_msg;
 #define Position_size                            22
 #define ReadingRequest_size                      66
 #define StringValue_size                         514
+#define WalkTestPoint_size                       138
 #define TELEMETRY_PB_H_MAX_SIZE                  LogChunk_size
 
 #ifdef __cplusplus
