@@ -44,6 +44,7 @@ PB_BIND(ConfigResponse, ConfigResponse, AUTO)
 
 PB_BIND(LogChunk, LogChunk, 2)
 
+
 PB_BIND(WalkTestPoint, WalkTestPoint, AUTO)
 
 

@@ -67,6 +67,17 @@ message NetStat {
   uint32 band     = 5;
   uint32 lac      = 6;
   uint32 rat      = 7;
+
+  // Reference signal received power, dBm -- confirmed against Quectel's
+  // documented AT+QCSQ output and this module's real output.
+  sint32 rsrp = 8;
+
+  // Raw AT+QCSQ RSSI field, deliberately left without a dBm unit: the
+  // documented example shows a negative dBm value here, but this module
+  // reports a small positive integer in the same position -- an unresolved
+  // discrepancy against Quectel's own documentation (see the firmware's
+  // SignalQuality struct doc comment).
+  sint32 rssi = 9;
 }
 
 message ReadingRequest {

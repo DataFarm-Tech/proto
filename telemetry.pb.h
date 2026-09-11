@@ -55,6 +55,15 @@ typedef struct _NetStat {
     uint32_t band;
     uint32_t lac;
     uint32_t rat;
+    /* Reference signal received power, dBm -- confirmed against Quectel's
+ documented AT+QCSQ output and this module's real output. */
+    int32_t rsrp;
+    /* Raw AT+QCSQ RSSI field, deliberately left without a dBm unit: the
+ documented example shows a negative dBm value here, but this module
+ reports a small positive integer in the same position -- an unresolved
+ discrepancy against Quectel's own documentation (see the firmware's
+ SignalQuality struct doc comment). */
+    int32_t rssi;
 } NetStat;
 
 /* Manufacturing/hardware identity that used to travel only in the
@@ -175,7 +184,9 @@ typedef struct _ConfigResponse {
     float temperature_factor;
     RATType rat_type;
     /* If true, GPS acquisition runs on every wake instead of the default
- once-a-week throttle. Off by default. */
+ once-a-week throttle (see AppRuntime::runCycle()'s should_trigger_gps).
+ Costs real time (30-90+s per fix, longer cold) and power every cycle --
+ off by default. */
     bool gps_every_cycle;
 } ConfigResponse;
 
@@ -195,7 +206,10 @@ typedef struct _LogChunk {
 /* One GPS+signal snapshot recorded by the CLI's `walktest` command, sent to
  its own dedicated endpoint (not update-gps) once the recording window
  closes -- one WalkTestPoint per point recorded, sent back-to-back rather
- than a single batched/repeated-field message. */
+ than a single batched/repeated-field message. Deliberately slimmer than
+ GpsUpdateRequest: no battery/OTA/manufacturing-identity fields, since a
+ walk test around a property is a one-off diagnostic session, not part of
+ the regular telemetry stream. */
 typedef struct _WalkTestPoint {
     char node_id[32];
     bool has_position;
@@ -240,13 +254,14 @@ extern "C" {
 
 
 
+
 /* Initializer values for message structs */
 #define GpsUpdateRequest_init_default            {"", false, Position_init_default, false, Battery_init_default, false, OtaStatus_init_default, false, NetStat_init_default, "", "", false, NetInfo_init_default}
 #define OtaStatus_init_default                   {"", 0, 0}
 #define Battery_init_default                     {0, 0, 0, 0}
 #define Position_init_default                    {0, 0, 0, 0, 0}
 #define NetInfo_init_default                     {"", "", ""}
-#define NetStat_init_default                     {0, 0, "", {0, {0}}, 0, 0, 0}
+#define NetStat_init_default                     {0, 0, "", {0, {0}}, 0, 0, 0, 0, 0}
 #define ReadingRequest_init_default              {"", "", 0, 0}
 #define StringValue_init_default                 {""}
 #define HealthRequest_init_default               {"", "", "", 0, 0, 0, 0, 0}
@@ -260,7 +275,7 @@ extern "C" {
 #define Battery_init_zero                        {0, 0, 0, 0}
 #define Position_init_zero                       {0, 0, 0, 0, 0}
 #define NetInfo_init_zero                        {"", "", ""}
-#define NetStat_init_zero                        {0, 0, "", {0, {0}}, 0, 0, 0}
+#define NetStat_init_zero                        {0, 0, "", {0, {0}}, 0, 0, 0, 0, 0}
 #define ReadingRequest_init_zero                 {"", "", 0, 0}
 #define StringValue_init_zero                    {""}
 #define HealthRequest_init_zero                  {"", "", "", 0, 0, 0, 0, 0}
@@ -293,6 +308,8 @@ extern "C" {
 #define NetStat_band_tag                         5
 #define NetStat_lac_tag                          6
 #define NetStat_rat_tag                          7
+#define NetStat_rsrp_tag                         8
+#define NetStat_rssi_tag                         9
 #define GpsUpdateRequest_node_id_tag             1
 #define GpsUpdateRequest_position_tag            2
 #define GpsUpdateRequest_battery_tag             3
@@ -338,7 +355,7 @@ extern "C" {
 #define WalkTestPoint_position_tag               2
 #define WalkTestPoint_net_stat_tag               3
 #define WalkTestPoint_timestamp_tag              4
-#define WalkTestPoint_has_signal_tag              5
+#define WalkTestPoint_has_signal_tag             5
 
 /* Struct field encoding specification for nanopb */
 #define GpsUpdateRequest_FIELDLIST(X, a) \
@@ -396,7 +413,9 @@ X(a, STATIC,   SINGULAR, STRING,   carrier,           3) \
 X(a, STATIC,   SINGULAR, BYTES,    cell_id,           4) \
 X(a, STATIC,   SINGULAR, UINT32,   band,              5) \
 X(a, STATIC,   SINGULAR, UINT32,   lac,               6) \
-X(a, STATIC,   SINGULAR, UINT32,   rat,               7)
+X(a, STATIC,   SINGULAR, UINT32,   rat,               7) \
+X(a, STATIC,   SINGULAR, SINT32,   rsrp,              8) \
+X(a, STATIC,   SINGULAR, SINT32,   rssi,              9)
 #define NetStat_CALLBACK NULL
 #define NetStat_DEFAULT NULL
 
@@ -508,17 +527,17 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 #define ConfigRequest_size                       33
 #define ConfigResponse_size                      147
 #define FirmwareVersionRequest_size              33
-#define GpsUpdateRequest_size                    321
+#define GpsUpdateRequest_size                    333
 #define HealthRequest_size                       129
 #define LogChunk_size                            653
 #define NetInfo_size                             59
-#define NetStat_size                             73
+#define NetStat_size                             85
 #define OtaStatus_size                           41
 #define Position_size                            22
 #define ReadingRequest_size                      66
 #define StringValue_size                         514
-#define WalkTestPoint_size                       140
 #define TELEMETRY_PB_H_MAX_SIZE                  LogChunk_size
+#define WalkTestPoint_size                       151
 
 #ifdef __cplusplus
 } /* extern "C" */
