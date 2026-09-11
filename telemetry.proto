@@ -216,4 +216,11 @@ message WalkTestPoint {
     // position.fix_time, which is the GPS fix's own timestamp and is stale/
     // meaningless when position.fix_valid is false (no real fix that cycle).
     fixed32  timestamp = 4;
+    // True only when the modem actually reported signal service at this
+    // point (rsrq/sinr are real readings, not proto3's zero default).
+    // net_stat can be present (has_net_stat) purely from carrier/cell
+    // identity being known even with no service, so that flag alone can't
+    // distinguish "genuinely rsrq=0" from "no signal at all" -- without
+    // this, a dead zone silently reads as a perfect signal instead.
+    bool     has_signal = 5;
 }

@@ -206,6 +206,13 @@ typedef struct _WalkTestPoint {
  position.fix_time, which is the GPS fix's own timestamp and is stale/
  meaningless when position.fix_valid is false (no real fix that cycle). */
     uint32_t timestamp;
+    /* True only when the modem actually reported signal service at this
+ point (rsrq/sinr are real readings, not proto3's zero default).
+ net_stat can be present (has_net_stat) purely from carrier/cell
+ identity being known even with no service, so that flag alone can't
+ distinguish "genuinely rsrq=0" from "no signal at all" -- without
+ this, a dead zone silently reads as a perfect signal instead. */
+    bool has_signal;
 } WalkTestPoint;
 
 
@@ -247,7 +254,7 @@ extern "C" {
 #define FirmwareVersionRequest_init_default      {""}
 #define ConfigResponse_init_default              {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0}
 #define LogChunk_init_default                    {"", 0, 0, 0, ""}
-#define WalkTestPoint_init_default               {"", false, Position_init_default, false, NetStat_init_default, 0}
+#define WalkTestPoint_init_default               {"", false, Position_init_default, false, NetStat_init_default, 0, 0}
 #define GpsUpdateRequest_init_zero               {"", false, Position_init_zero, false, Battery_init_zero, false, OtaStatus_init_zero, false, NetStat_init_zero, "", "", false, NetInfo_init_zero}
 #define OtaStatus_init_zero                      {"", 0, 0}
 #define Battery_init_zero                        {0, 0, 0, 0}
@@ -261,7 +268,7 @@ extern "C" {
 #define FirmwareVersionRequest_init_zero         {""}
 #define ConfigResponse_init_zero                 {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0}
 #define LogChunk_init_zero                       {"", 0, 0, 0, ""}
-#define WalkTestPoint_init_zero                  {"", false, Position_init_zero, false, NetStat_init_zero, 0}
+#define WalkTestPoint_init_zero                  {"", false, Position_init_zero, false, NetStat_init_zero, 0, 0}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define OtaStatus_fw_ver_tag                     1
@@ -331,6 +338,7 @@ extern "C" {
 #define WalkTestPoint_position_tag               2
 #define WalkTestPoint_net_stat_tag               3
 #define WalkTestPoint_timestamp_tag              4
+#define WalkTestPoint_has_signal_tag              5
 
 /* Struct field encoding specification for nanopb */
 #define GpsUpdateRequest_FIELDLIST(X, a) \
@@ -457,7 +465,8 @@ X(a, STATIC,   SINGULAR, STRING,   data,              5)
 X(a, STATIC,   SINGULAR, STRING,   node_id,           1) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  position,          2) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  net_stat,          3) \
-X(a, STATIC,   SINGULAR, FIXED32,  timestamp,         4)
+X(a, STATIC,   SINGULAR, FIXED32,  timestamp,         4) \
+X(a, STATIC,   SINGULAR, BOOL,     has_signal,        5)
 #define WalkTestPoint_CALLBACK NULL
 #define WalkTestPoint_DEFAULT NULL
 #define WalkTestPoint_position_MSGTYPE Position
@@ -508,7 +517,7 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 #define Position_size                            22
 #define ReadingRequest_size                      66
 #define StringValue_size                         514
-#define WalkTestPoint_size                       138
+#define WalkTestPoint_size                       140
 #define TELEMETRY_PB_H_MAX_SIZE                  LogChunk_size
 
 #ifdef __cplusplus
