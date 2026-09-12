@@ -35,6 +35,18 @@ typedef struct _Position {
     uint32_t fix_time; /* unix epoch seconds of the fix itself, not of message receipt */
     float accuracy_m; /* estimated horizontal accuracy, metres */
     bool fix_valid; /* false if this is a stale/last-known fallback position, not a live fix */
+    /* nsat from the modem's +QGPSLOC response -- 0 if unavailable/no fix. */
+    uint32_t satellite_count;
+    /* Wall-clock time the device spent acquiring this fix, start to finish
+ (successful or not) -- 0 only when acquisition was skipped outright
+ (GPS_SKIP_EN build flag or the gps_skip_enabled runtime flag), not a
+ real measurement of an instant fix. */
+    uint32_t acquisition_duration_ms;
+    /* Echoes whether this acquisition skipped the enable call + cold-start
+ wait (see GPS::acquireCoordinates()'s already_warm parameter) -- not a
+ detected outcome, since AT+QGPSLOC has no way to report whether a fix
+ was actually warm/hot vs. a true cold start. */
+    bool warm_start;
 } Position;
 
 /* SIM/module identity — fixed to the physical hardware, doesn't change without a SIM swap. */
@@ -259,7 +271,7 @@ extern "C" {
 #define GpsUpdateRequest_init_default            {"", false, Position_init_default, false, Battery_init_default, false, OtaStatus_init_default, false, NetStat_init_default, "", "", false, NetInfo_init_default}
 #define OtaStatus_init_default                   {"", 0, 0}
 #define Battery_init_default                     {0, 0, 0, 0}
-#define Position_init_default                    {0, 0, 0, 0, 0}
+#define Position_init_default                    {0, 0, 0, 0, 0, 0, 0, 0}
 #define NetInfo_init_default                     {"", "", ""}
 #define NetStat_init_default                     {0, 0, "", {0, {0}}, 0, 0, 0, 0, 0}
 #define ReadingRequest_init_default              {"", "", 0, 0}
@@ -273,7 +285,7 @@ extern "C" {
 #define GpsUpdateRequest_init_zero               {"", false, Position_init_zero, false, Battery_init_zero, false, OtaStatus_init_zero, false, NetStat_init_zero, "", "", false, NetInfo_init_zero}
 #define OtaStatus_init_zero                      {"", 0, 0}
 #define Battery_init_zero                        {0, 0, 0, 0}
-#define Position_init_zero                       {0, 0, 0, 0, 0}
+#define Position_init_zero                       {0, 0, 0, 0, 0, 0, 0, 0}
 #define NetInfo_init_zero                        {"", "", ""}
 #define NetStat_init_zero                        {0, 0, "", {0, {0}}, 0, 0, 0, 0, 0}
 #define ReadingRequest_init_zero                 {"", "", 0, 0}
@@ -298,6 +310,9 @@ extern "C" {
 #define Position_fix_time_tag                    3
 #define Position_accuracy_m_tag                  4
 #define Position_fix_valid_tag                   5
+#define Position_satellite_count_tag             6
+#define Position_acquisition_duration_ms_tag     7
+#define Position_warm_start_tag                  8
 #define NetInfo_iccid_tag                        1
 #define NetInfo_imei_tag                         2
 #define NetInfo_imsi_tag                         3
@@ -395,7 +410,10 @@ X(a, STATIC,   SINGULAR, FLOAT,    lat,               1) \
 X(a, STATIC,   SINGULAR, FLOAT,    lon,               2) \
 X(a, STATIC,   SINGULAR, FIXED32,  fix_time,          3) \
 X(a, STATIC,   SINGULAR, FLOAT,    accuracy_m,        4) \
-X(a, STATIC,   SINGULAR, BOOL,     fix_valid,         5)
+X(a, STATIC,   SINGULAR, BOOL,     fix_valid,         5) \
+X(a, STATIC,   SINGULAR, UINT32,   satellite_count,   6) \
+X(a, STATIC,   SINGULAR, UINT32,   acquisition_duration_ms,   7) \
+X(a, STATIC,   SINGULAR, BOOL,     warm_start,        8)
 #define Position_CALLBACK NULL
 #define Position_DEFAULT NULL
 
@@ -527,17 +545,17 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 #define ConfigRequest_size                       33
 #define ConfigResponse_size                      147
 #define FirmwareVersionRequest_size              33
-#define GpsUpdateRequest_size                    333
+#define GpsUpdateRequest_size                    347
 #define HealthRequest_size                       129
 #define LogChunk_size                            653
 #define NetInfo_size                             59
 #define NetStat_size                             85
 #define OtaStatus_size                           41
-#define Position_size                            22
+#define Position_size                            36
 #define ReadingRequest_size                      66
 #define StringValue_size                         514
 #define TELEMETRY_PB_H_MAX_SIZE                  LogChunk_size
-#define WalkTestPoint_size                       151
+#define WalkTestPoint_size                       165
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -48,6 +48,21 @@ message Position {
   fixed32 fix_time   = 3; // unix epoch seconds of the fix itself, not of message receipt
   float   accuracy_m = 4; // estimated horizontal accuracy, metres
   bool    fix_valid  = 5; // false if this is a stale/last-known fallback position, not a live fix
+
+  // nsat from the modem's +QGPSLOC response -- 0 if unavailable/no fix.
+  uint32 satellite_count = 6;
+
+  // Wall-clock time the device spent acquiring this fix, start to finish
+  // (successful or not) -- 0 only when acquisition was skipped outright
+  // (GPS_SKIP_EN build flag or the gps_skip_enabled runtime flag), not a
+  // real measurement of an instant fix.
+  uint32 acquisition_duration_ms = 7;
+
+  // Echoes whether this acquisition skipped the enable call + cold-start
+  // wait (see GPS::acquireCoordinates()'s already_warm parameter) -- not a
+  // detected outcome, since AT+QGPSLOC has no way to report whether a fix
+  // was actually warm/hot vs. a true cold start.
+  bool warm_start = 8;
 }
 
 // SIM/module identity — fixed to the physical hardware, doesn't change without a SIM swap.
