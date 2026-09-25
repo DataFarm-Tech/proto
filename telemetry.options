@@ -33,6 +33,8 @@ FirmwareVersionRequest.hw_ver max_size:32
 # for an SSID, 64 for a WPA2-PSK passphrase), plus a null terminator.
 ConfigResponse.wifi_ssid     max_size:33
 ConfigResponse.wifi_password max_size:65
+# Covers "0x" + a wide multi-band hex mask + null terminator with headroom.
+ConfigResponse.lte_bandmask  max_size:40
 
 LogChunk.node_id max_size:32
 # Send-side chunk size is 512 bytes of raw log text; this leaves headroom
