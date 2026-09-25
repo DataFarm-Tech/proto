@@ -259,9 +259,8 @@ message ConfigResponse {
     // leave whatever mask (or lack of one) is already applied" -- same
     // convention as wifi_ssid/wifi_password above, since proto3 singular
     // strings have no field-presence flag to distinguish "unset" from
-    // "explicitly cleared". Not yet applied to the modem as of this field's
-    // introduction -- this only carries the value down to the device's
-    // config store; wiring it into an actual AT+QCFG call is a later step.
+    // "explicitly cleared". Applied to the modem every boot in nitra's
+    // SimModem::stepInit() via ATCommandHndlr::setLteBandMask().
     string lte_bandmask = 14;
 }
 
