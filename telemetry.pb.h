@@ -108,6 +108,15 @@ typedef struct _ReadingRequest {
  -- the server only classifies/persists this value, it no longer
  aggregates raw samples itself. */
     float reading;
+    /* Unix epoch seconds when this reading was actually collected on-device
+ (via the NTP-synced system clock -- see AppRuntime::syncTime(), which
+ runs earlier in the same wake cycle), NOT when the server received
+ it. Lets the server key on when the measurement was actually taken
+ rather than when the request happened to arrive -- which matters once
+ a failed send can be buffered and retried in a later cycle, since
+ "arrived at the server" and "collected on-device" are then no longer
+ the same moment. Matches WalkTestPoint.timestamp's convention. */
+    uint32_t timestamp;
 } ReadingRequest;
 
 typedef struct _ReadingEntry {
@@ -126,6 +135,11 @@ typedef struct _ReadingBatchRequest {
     uint64_t session;
     pb_size_t readings_count;
     ReadingEntry readings[8];
+    /* Unix epoch seconds when this batch was collected -- see
+ ReadingRequest.timestamp above. One value for the whole batch since
+ NPK::collectAllMeasurements() reads every measurement type in a
+ single Modbus pass, not one type at a time. */
+    uint32_t timestamp;
 } ReadingBatchRequest;
 
 typedef struct _StringValue {
@@ -305,8 +319,8 @@ extern "C" {
 #define Position_init_default                    {0, 0, 0, 0, 0, 0, 0, 0}
 #define NetInfo_init_default                     {"", "", ""}
 #define NetStat_init_default                     {0, 0, "", {0, {0}}, 0, 0, 0, 0, 0}
-#define ReadingRequest_init_default              {"", "", 0, 0}
-#define ReadingBatchRequest_init_default         {"", 0, 0, {ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default}}
+#define ReadingRequest_init_default              {"", "", 0, 0, 0}
+#define ReadingBatchRequest_init_default         {"", 0, 0, {ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default}, 0}
 #define ReadingEntry_init_default                {"", 0}
 #define StringValue_init_default                 {""}
 #define HealthRequest_init_default               {"", "", "", 0, 0, 0, 0, 0, 0}
@@ -321,8 +335,8 @@ extern "C" {
 #define Position_init_zero                       {0, 0, 0, 0, 0, 0, 0, 0}
 #define NetInfo_init_zero                        {"", "", ""}
 #define NetStat_init_zero                        {0, 0, "", {0, {0}}, 0, 0, 0, 0, 0}
-#define ReadingRequest_init_zero                 {"", "", 0, 0}
-#define ReadingBatchRequest_init_zero            {"", 0, 0, {ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero}}
+#define ReadingRequest_init_zero                 {"", "", 0, 0, 0}
+#define ReadingBatchRequest_init_zero            {"", 0, 0, {ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero}, 0}
 #define ReadingEntry_init_zero                   {"", 0}
 #define StringValue_init_zero                    {""}
 #define HealthRequest_init_zero                  {"", "", "", 0, 0, 0, 0, 0, 0}
@@ -372,11 +386,13 @@ extern "C" {
 #define ReadingRequest_m_type_tag                2
 #define ReadingRequest_session_tag               4
 #define ReadingRequest_reading_tag               5
+#define ReadingRequest_timestamp_tag             6
 #define ReadingEntry_m_type_tag                  1
 #define ReadingEntry_reading_tag                 2
 #define ReadingBatchRequest_node_id_tag          1
 #define ReadingBatchRequest_session_tag          2
 #define ReadingBatchRequest_readings_tag         3
+#define ReadingBatchRequest_timestamp_tag        4
 #define StringValue_value_tag                    1
 #define HealthRequest_node_id_tag                1
 #define HealthRequest_boot_reason_tag            2
@@ -482,14 +498,16 @@ X(a, STATIC,   SINGULAR, SINT32,   rssi,              9)
 X(a, STATIC,   SINGULAR, STRING,   node_id,           1) \
 X(a, STATIC,   SINGULAR, STRING,   m_type,            2) \
 X(a, STATIC,   SINGULAR, UINT64,   session,           4) \
-X(a, STATIC,   SINGULAR, FLOAT,    reading,           5)
+X(a, STATIC,   SINGULAR, FLOAT,    reading,           5) \
+X(a, STATIC,   SINGULAR, FIXED32,  timestamp,         6)
 #define ReadingRequest_CALLBACK NULL
 #define ReadingRequest_DEFAULT NULL
 
 #define ReadingBatchRequest_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, STRING,   node_id,           1) \
 X(a, STATIC,   SINGULAR, UINT64,   session,           2) \
-X(a, STATIC,   REPEATED, MESSAGE,  readings,          3)
+X(a, STATIC,   REPEATED, MESSAGE,  readings,          3) \
+X(a, STATIC,   SINGULAR, FIXED32,  timestamp,         4)
 #define ReadingBatchRequest_CALLBACK NULL
 #define ReadingBatchRequest_DEFAULT NULL
 #define ReadingBatchRequest_readings_MSGTYPE ReadingEntry
@@ -612,9 +630,9 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 #define NetStat_size                             85
 #define OtaStatus_size                           41
 #define Position_size                            36
-#define ReadingBatchRequest_size                 236
+#define ReadingBatchRequest_size                 241
 #define ReadingEntry_size                        22
-#define ReadingRequest_size                      66
+#define ReadingRequest_size                      71
 #define StringValue_size                         514
 #define TELEMETRY_PB_H_MAX_SIZE                  LogChunk_size
 #define WalkTestPoint_size                       165

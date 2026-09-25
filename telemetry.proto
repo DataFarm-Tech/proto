@@ -107,6 +107,15 @@ message ReadingRequest {
     // -- the server only classifies/persists this value, it no longer
     // aggregates raw samples itself.
     float  reading   = 5;
+    // Unix epoch seconds when this reading was actually collected on-device
+    // (via the NTP-synced system clock -- see AppRuntime::syncTime(), which
+    // runs earlier in the same wake cycle), NOT when the server received
+    // it. Lets the server key on when the measurement was actually taken
+    // rather than when the request happened to arrive -- which matters once
+    // a failed send can be buffered and retried in a later cycle, since
+    // "arrived at the server" and "collected on-device" are then no longer
+    // the same moment. Matches WalkTestPoint.timestamp's convention.
+    fixed32 timestamp = 6;
 }
 
 // Batched form of ReadingRequest: every measurement type from one collection
@@ -118,6 +127,11 @@ message ReadingBatchRequest {
     string node_id  = 1;
     uint64 session   = 2;
     repeated ReadingEntry readings = 3;
+    // Unix epoch seconds when this batch was collected -- see
+    // ReadingRequest.timestamp above. One value for the whole batch since
+    // NPK::collectAllMeasurements() reads every measurement type in a
+    // single Modbus pass, not one type at a time.
+    fixed32 timestamp = 4;
 }
 
 message ReadingEntry {
