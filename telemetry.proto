@@ -154,6 +154,18 @@ message HealthRequest {
     // figure for that cycle; 0/0 if no prior cycle data is available yet.
     uint32 prev_cycle_exchanges_attempted = 7;
     uint32 prev_cycle_exchanges_succeeded = 8;
+
+    // How long the *previous* wake cycle's GPS acquisition took (milliseconds),
+    // same one-cycle-delayed reporting as the fields above and for the same
+    // reason -- this ping fires before GPS acquisition even runs, so its own
+    // cycle's duration isn't known yet. Mirrors GpsUpdateRequest.position.
+    // acquisition_duration_ms, but GPS only actually runs roughly once a
+    // week (see nitra's gpsBootOffset), so most cycles never send a
+    // GpsUpdateRequest at all -- this field is what fires every cycle
+    // regardless, reporting whenever GPS last actually ran. 0 if no prior
+    // measurement is available yet, or GPS acquisition was skipped entirely
+    // (GPS_SKIP_EN/gps_skip_enabled).
+    uint32 prev_cycle_gps_fix_ms = 9;
 }
 
 // Sent alongside the GET to /config so the server knows which node's

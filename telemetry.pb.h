@@ -151,6 +151,17 @@ typedef struct _HealthRequest {
  figure for that cycle; 0/0 if no prior cycle data is available yet. */
     uint32_t prev_cycle_exchanges_attempted;
     uint32_t prev_cycle_exchanges_succeeded;
+    /* How long the *previous* wake cycle's GPS acquisition took (milliseconds),
+ same one-cycle-delayed reporting as the fields above and for the same
+ reason -- this ping fires before GPS acquisition even runs, so its own
+ cycle's duration isn't known yet. Mirrors GpsUpdateRequest.position.
+ acquisition_duration_ms, but GPS only actually runs roughly once a
+ week (see nitra's gpsBootOffset), so most cycles never send a
+ GpsUpdateRequest at all -- this field is what fires every cycle
+ regardless, reporting whenever GPS last actually ran. 0 if no prior
+ measurement is available yet, or GPS acquisition was skipped entirely
+ (GPS_SKIP_EN/gps_skip_enabled). */
+    uint32_t prev_cycle_gps_fix_ms;
 } HealthRequest;
 
 /* Sent alongside the GET to /config so the server knows which node's
@@ -276,7 +287,7 @@ extern "C" {
 #define NetStat_init_default                     {0, 0, "", {0, {0}}, 0, 0, 0, 0, 0}
 #define ReadingRequest_init_default              {"", "", 0, 0}
 #define StringValue_init_default                 {""}
-#define HealthRequest_init_default               {"", "", "", 0, 0, 0, 0, 0}
+#define HealthRequest_init_default               {"", "", "", 0, 0, 0, 0, 0, 0}
 #define ConfigRequest_init_default               {""}
 #define FirmwareVersionRequest_init_default      {""}
 #define ConfigResponse_init_default              {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0}
@@ -290,7 +301,7 @@ extern "C" {
 #define NetStat_init_zero                        {0, 0, "", {0, {0}}, 0, 0, 0, 0, 0}
 #define ReadingRequest_init_zero                 {"", "", 0, 0}
 #define StringValue_init_zero                    {""}
-#define HealthRequest_init_zero                  {"", "", "", 0, 0, 0, 0, 0}
+#define HealthRequest_init_zero                  {"", "", "", 0, 0, 0, 0, 0, 0}
 #define ConfigRequest_init_zero                  {""}
 #define FirmwareVersionRequest_init_zero         {""}
 #define ConfigResponse_init_zero                 {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0}
@@ -346,6 +357,7 @@ extern "C" {
 #define HealthRequest_prev_cycle_fs_used_bytes_tag 6
 #define HealthRequest_prev_cycle_exchanges_attempted_tag 7
 #define HealthRequest_prev_cycle_exchanges_succeeded_tag 8
+#define HealthRequest_prev_cycle_gps_fix_ms_tag  9
 #define ConfigRequest_node_id_tag                1
 #define FirmwareVersionRequest_hw_ver_tag        1
 #define ConfigResponse_main_app_delay_tag        1
@@ -458,7 +470,8 @@ X(a, STATIC,   SINGULAR, UINT32,   rtt_ms,            4) \
 X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_min_free_bytes,   5) \
 X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_fs_used_bytes,   6) \
 X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_exchanges_attempted,   7) \
-X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_exchanges_succeeded,   8)
+X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_exchanges_succeeded,   8) \
+X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_gps_fix_ms,   9)
 #define HealthRequest_CALLBACK NULL
 #define HealthRequest_DEFAULT NULL
 
@@ -546,7 +559,7 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 #define ConfigResponse_size                      147
 #define FirmwareVersionRequest_size              33
 #define GpsUpdateRequest_size                    347
-#define HealthRequest_size                       129
+#define HealthRequest_size                       135
 #define LogChunk_size                            653
 #define NetInfo_size                             59
 #define NetStat_size                             85
