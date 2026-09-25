@@ -27,6 +27,12 @@ PB_BIND(NetStat, NetStat, AUTO)
 PB_BIND(ReadingRequest, ReadingRequest, AUTO)
 
 
+PB_BIND(ReadingBatchRequest, ReadingBatchRequest, AUTO)
+
+
+PB_BIND(ReadingEntry, ReadingEntry, AUTO)
+
+
 PB_BIND(StringValue, StringValue, 2)
 
 

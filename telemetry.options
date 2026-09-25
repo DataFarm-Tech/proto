@@ -40,3 +40,9 @@ LogChunk.node_id max_size:32
 LogChunk.data     max_size:600
 
 WalkTestPoint.node_id max_size:32
+
+ReadingBatchRequest.node_id max_size:32
+# NPK::NUM_MEASUREMENTS is 7 (N/P/K/moisture/pH/temp/conductivity) -- 8
+# leaves headroom for one more type without needing to touch this again.
+ReadingBatchRequest.readings max_count:8
+ReadingEntry.m_type max_size:16

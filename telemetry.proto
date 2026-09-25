@@ -109,6 +109,23 @@ message ReadingRequest {
     float  reading   = 5;
 }
 
+// Batched form of ReadingRequest: every measurement type from one collection
+// cycle in a single CoAP round-trip (one modem exchange) instead of one
+// ReadingRequest message -- and one modem round-trip -- per type. Sent to
+// its own "reading-batch" resource; ReadingRequest and the "reading"
+// resource stay in place unchanged alongside it.
+message ReadingBatchRequest {
+    string node_id  = 1;
+    uint64 session   = 2;
+    repeated ReadingEntry readings = 3;
+}
+
+message ReadingEntry {
+    string m_type  = 1;
+    // Already scaled/aggregated on-device -- see ReadingRequest.reading.
+    float  reading = 2;
+}
+
 message StringValue {
     string value = 1;
 }

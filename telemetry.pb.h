@@ -110,6 +110,24 @@ typedef struct _ReadingRequest {
     float reading;
 } ReadingRequest;
 
+typedef struct _ReadingEntry {
+    char m_type[16];
+    /* Already scaled/aggregated on-device -- see ReadingRequest.reading. */
+    float reading;
+} ReadingEntry;
+
+/* Batched form of ReadingRequest: every measurement type from one collection
+ cycle in a single CoAP round-trip (one modem exchange) instead of one
+ ReadingRequest message -- and one modem round-trip -- per type. Sent to
+ its own "reading-batch" resource; ReadingRequest and the "reading"
+ resource stay in place unchanged alongside it. */
+typedef struct _ReadingBatchRequest {
+    char node_id[32];
+    uint64_t session;
+    pb_size_t readings_count;
+    ReadingEntry readings[8];
+} ReadingBatchRequest;
+
 typedef struct _StringValue {
     char value[512];
 } StringValue;
@@ -273,6 +291,8 @@ extern "C" {
 
 
 
+
+
 #define ConfigResponse_rat_type_ENUMTYPE RATType
 
 
@@ -286,6 +306,8 @@ extern "C" {
 #define NetInfo_init_default                     {"", "", ""}
 #define NetStat_init_default                     {0, 0, "", {0, {0}}, 0, 0, 0, 0, 0}
 #define ReadingRequest_init_default              {"", "", 0, 0}
+#define ReadingBatchRequest_init_default         {"", 0, 0, {ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default}}
+#define ReadingEntry_init_default                {"", 0}
 #define StringValue_init_default                 {""}
 #define HealthRequest_init_default               {"", "", "", 0, 0, 0, 0, 0, 0}
 #define ConfigRequest_init_default               {""}
@@ -300,6 +322,8 @@ extern "C" {
 #define NetInfo_init_zero                        {"", "", ""}
 #define NetStat_init_zero                        {0, 0, "", {0, {0}}, 0, 0, 0, 0, 0}
 #define ReadingRequest_init_zero                 {"", "", 0, 0}
+#define ReadingBatchRequest_init_zero            {"", 0, 0, {ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero}}
+#define ReadingEntry_init_zero                   {"", 0}
 #define StringValue_init_zero                    {""}
 #define HealthRequest_init_zero                  {"", "", "", 0, 0, 0, 0, 0, 0}
 #define ConfigRequest_init_zero                  {""}
@@ -348,6 +372,11 @@ extern "C" {
 #define ReadingRequest_m_type_tag                2
 #define ReadingRequest_session_tag               4
 #define ReadingRequest_reading_tag               5
+#define ReadingEntry_m_type_tag                  1
+#define ReadingEntry_reading_tag                 2
+#define ReadingBatchRequest_node_id_tag          1
+#define ReadingBatchRequest_session_tag          2
+#define ReadingBatchRequest_readings_tag         3
 #define StringValue_value_tag                    1
 #define HealthRequest_node_id_tag                1
 #define HealthRequest_boot_reason_tag            2
@@ -457,6 +486,20 @@ X(a, STATIC,   SINGULAR, FLOAT,    reading,           5)
 #define ReadingRequest_CALLBACK NULL
 #define ReadingRequest_DEFAULT NULL
 
+#define ReadingBatchRequest_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, STRING,   node_id,           1) \
+X(a, STATIC,   SINGULAR, UINT64,   session,           2) \
+X(a, STATIC,   REPEATED, MESSAGE,  readings,          3)
+#define ReadingBatchRequest_CALLBACK NULL
+#define ReadingBatchRequest_DEFAULT NULL
+#define ReadingBatchRequest_readings_MSGTYPE ReadingEntry
+
+#define ReadingEntry_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, STRING,   m_type,            1) \
+X(a, STATIC,   SINGULAR, FLOAT,    reading,           2)
+#define ReadingEntry_CALLBACK NULL
+#define ReadingEntry_DEFAULT NULL
+
 #define StringValue_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, STRING,   value,             1)
 #define StringValue_CALLBACK NULL
@@ -529,6 +572,8 @@ extern const pb_msgdesc_t Position_msg;
 extern const pb_msgdesc_t NetInfo_msg;
 extern const pb_msgdesc_t NetStat_msg;
 extern const pb_msgdesc_t ReadingRequest_msg;
+extern const pb_msgdesc_t ReadingBatchRequest_msg;
+extern const pb_msgdesc_t ReadingEntry_msg;
 extern const pb_msgdesc_t StringValue_msg;
 extern const pb_msgdesc_t HealthRequest_msg;
 extern const pb_msgdesc_t ConfigRequest_msg;
@@ -545,6 +590,8 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 #define NetInfo_fields &NetInfo_msg
 #define NetStat_fields &NetStat_msg
 #define ReadingRequest_fields &ReadingRequest_msg
+#define ReadingBatchRequest_fields &ReadingBatchRequest_msg
+#define ReadingEntry_fields &ReadingEntry_msg
 #define StringValue_fields &StringValue_msg
 #define HealthRequest_fields &HealthRequest_msg
 #define ConfigRequest_fields &ConfigRequest_msg
@@ -565,6 +612,8 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 #define NetStat_size                             85
 #define OtaStatus_size                           41
 #define Position_size                            36
+#define ReadingBatchRequest_size                 236
+#define ReadingEntry_size                        22
 #define ReadingRequest_size                      66
 #define StringValue_size                         514
 #define TELEMETRY_PB_H_MAX_SIZE                  LogChunk_size
