@@ -197,6 +197,19 @@ message HealthRequest {
     // measurement is available yet, or GPS acquisition was skipped entirely
     // (GPS_SKIP_EN/gps_skip_enabled).
     uint32 prev_cycle_gps_fix_ms = 9;
+
+    // Wall-clock seconds the *previous* wake spent on everything from just
+    // after commissioning/soil-settle checks (StateManager::completeInit())
+    // through to right before that wake's own deep sleep -- connect, health
+    // ping, GPS, config, OTA, collection, log upload, all of it. Same
+    // one-cycle-delayed reporting as the fields above, and for the same
+    // reason: this ping fires near the start of the cycle it's sent
+    // alongside, before that cycle's own duration is known. Measured with
+    // UptimeTimer (a FreeRTOS software timer, reset every boot -- see
+    // StateManager::startUptimeTimer()/stopUptimeTimer()), not derived from
+    // wall-clock time, so it stays correct across an NTP resync mid-cycle.
+    // 0 if no prior measurement is available yet.
+    uint32 prev_cycle_duration_s = 10;
 }
 
 // Sent alongside the GET to /config so the server knows which node's

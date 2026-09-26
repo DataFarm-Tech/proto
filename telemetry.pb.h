@@ -194,6 +194,18 @@ typedef struct _HealthRequest {
  measurement is available yet, or GPS acquisition was skipped entirely
  (GPS_SKIP_EN/gps_skip_enabled). */
     uint32_t prev_cycle_gps_fix_ms;
+    /* Wall-clock seconds the *previous* wake spent on everything from just
+ after commissioning/soil-settle checks (StateManager::completeInit())
+ through to right before that wake's own deep sleep -- connect, health
+ ping, GPS, config, OTA, collection, log upload, all of it. Same
+ one-cycle-delayed reporting as the fields above, and for the same
+ reason: this ping fires near the start of the cycle it's sent
+ alongside, before that cycle's own duration is known. Measured with
+ UptimeTimer (a FreeRTOS software timer, reset every boot -- see
+ StateManager::startUptimeTimer()/stopUptimeTimer()), not derived from
+ wall-clock time, so it stays correct across an NTP resync mid-cycle.
+ 0 if no prior measurement is available yet. */
+    uint32_t prev_cycle_duration_s;
 } HealthRequest;
 
 /* Sent alongside the GET to /config so the server knows which node's
@@ -323,7 +335,7 @@ extern "C" {
 #define ReadingBatchRequest_init_default         {"", 0, 0, {ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default}, 0}
 #define ReadingEntry_init_default                {"", 0}
 #define StringValue_init_default                 {""}
-#define HealthRequest_init_default               {"", "", "", 0, 0, 0, 0, 0, 0}
+#define HealthRequest_init_default               {"", "", "", 0, 0, 0, 0, 0, 0, 0}
 #define ConfigRequest_init_default               {""}
 #define FirmwareVersionRequest_init_default      {""}
 #define ConfigResponse_init_default              {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, ""}
@@ -339,7 +351,7 @@ extern "C" {
 #define ReadingBatchRequest_init_zero            {"", 0, 0, {ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero}, 0}
 #define ReadingEntry_init_zero                   {"", 0}
 #define StringValue_init_zero                    {""}
-#define HealthRequest_init_zero                  {"", "", "", 0, 0, 0, 0, 0, 0}
+#define HealthRequest_init_zero                  {"", "", "", 0, 0, 0, 0, 0, 0, 0}
 #define ConfigRequest_init_zero                  {""}
 #define FirmwareVersionRequest_init_zero         {""}
 #define ConfigResponse_init_zero                 {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, ""}
@@ -403,6 +415,7 @@ extern "C" {
 #define HealthRequest_prev_cycle_exchanges_attempted_tag 7
 #define HealthRequest_prev_cycle_exchanges_succeeded_tag 8
 #define HealthRequest_prev_cycle_gps_fix_ms_tag  9
+#define HealthRequest_prev_cycle_duration_s_tag  10
 #define ConfigRequest_node_id_tag                1
 #define FirmwareVersionRequest_hw_ver_tag        1
 #define ConfigResponse_main_app_delay_tag        1
@@ -530,7 +543,8 @@ X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_min_free_bytes,   5) \
 X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_fs_used_bytes,   6) \
 X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_exchanges_attempted,   7) \
 X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_exchanges_succeeded,   8) \
-X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_gps_fix_ms,   9)
+X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_gps_fix_ms,   9) \
+X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_duration_s,  10)
 #define HealthRequest_CALLBACK NULL
 #define HealthRequest_DEFAULT NULL
 
@@ -620,7 +634,7 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 #define ConfigResponse_size                      86
 #define FirmwareVersionRequest_size              33
 #define GpsUpdateRequest_size                    347
-#define HealthRequest_size                       135
+#define HealthRequest_size                       141
 #define LogChunk_size                            653
 #define NetInfo_size                             59
 #define NetStat_size                             85
