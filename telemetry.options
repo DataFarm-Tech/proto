@@ -29,10 +29,6 @@ ConfigRequest.node_id max_size:32
 # Matches GpsUpdateRequest.hw_ver's own sizing above.
 FirmwareVersionRequest.hw_ver max_size:32
 
-# Matches wifi_config_t.sta.ssid/password (ESP-IDF's own limits: 32 bytes
-# for an SSID, 64 for a WPA2-PSK passphrase), plus a null terminator.
-ConfigResponse.wifi_ssid     max_size:33
-ConfigResponse.wifi_password max_size:65
 # Covers "0x" + a wide multi-band hex mask + null terminator with headroom.
 ConfigResponse.lte_bandmask  max_size:40
 

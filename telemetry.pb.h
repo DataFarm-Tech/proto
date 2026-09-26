@@ -218,16 +218,6 @@ typedef struct _FirmwareVersionRequest {
  HealthRequest -- looked up from the node_config table server-side. */
 typedef struct _ConfigResponse {
     uint32_t main_app_delay; /* seconds between check-in cycles */
-    /* If true, a wake whose primary (SIM) connection fails to come up
- retries once over WiFi before giving up on the wake entirely. Doesn't
- change the primary connection method -- SIM is still tried first on
- every wake regardless of this flag. */
-    bool wifi_backup_enabled;
-    /* Credentials for the WiFi backup connection above. Consumers may treat
- an empty value as "no change" and keep whatever WiFi credentials
- (build-time default or previously configured) they already have. */
-    char wifi_ssid[33];
-    char wifi_password[65];
     /* Per-channel calibration factors applied to raw sensor readings.
  Default to 1.0 (no adjustment) when not configured server-side. */
     float conductivity_factor;
@@ -248,10 +238,9 @@ typedef struct _ConfigResponse {
  bands actually present at this device's deployment site instead of
  scanning every band the module supports -- shortens registration
  time (and the power it costs) on every wake. Empty means "no change,
- leave whatever mask (or lack of one) is already applied" -- same
- convention as wifi_ssid/wifi_password above, since proto3 singular
- strings have no field-presence flag to distinguish "unset" from
- "explicitly cleared". Applied to the modem every boot in nitra's
+ leave whatever mask (or lack of one) is already applied", since
+ proto3 singular strings have no field-presence flag to distinguish
+ "unset" from "explicitly cleared". Applied to the modem every boot in nitra's
  SimModem::stepInit() via ATCommandHndlr::setLteBandMask(). */
     char lte_bandmask[40];
 } ConfigResponse;
@@ -337,7 +326,7 @@ extern "C" {
 #define HealthRequest_init_default               {"", "", "", 0, 0, 0, 0, 0, 0}
 #define ConfigRequest_init_default               {""}
 #define FirmwareVersionRequest_init_default      {""}
-#define ConfigResponse_init_default              {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, ""}
+#define ConfigResponse_init_default              {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, ""}
 #define LogChunk_init_default                    {"", 0, 0, 0, ""}
 #define WalkTestPoint_init_default               {"", false, Position_init_default, false, NetStat_init_default, 0, 0}
 #define GpsUpdateRequest_init_zero               {"", false, Position_init_zero, false, Battery_init_zero, false, OtaStatus_init_zero, false, NetStat_init_zero, "", "", false, NetInfo_init_zero}
@@ -353,7 +342,7 @@ extern "C" {
 #define HealthRequest_init_zero                  {"", "", "", 0, 0, 0, 0, 0, 0}
 #define ConfigRequest_init_zero                  {""}
 #define FirmwareVersionRequest_init_zero         {""}
-#define ConfigResponse_init_zero                 {0, 0, "", "", 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, ""}
+#define ConfigResponse_init_zero                 {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, ""}
 #define LogChunk_init_zero                       {"", 0, 0, 0, ""}
 #define WalkTestPoint_init_zero                  {"", false, Position_init_zero, false, NetStat_init_zero, 0, 0}
 
@@ -417,9 +406,6 @@ extern "C" {
 #define ConfigRequest_node_id_tag                1
 #define FirmwareVersionRequest_hw_ver_tag        1
 #define ConfigResponse_main_app_delay_tag        1
-#define ConfigResponse_wifi_backup_enabled_tag   2
-#define ConfigResponse_wifi_ssid_tag             3
-#define ConfigResponse_wifi_password_tag         4
 #define ConfigResponse_conductivity_factor_tag   5
 #define ConfigResponse_moisture_factor_tag       6
 #define ConfigResponse_ph_factor_tag             7
@@ -560,9 +546,6 @@ X(a, STATIC,   SINGULAR, STRING,   hw_ver,            1)
 
 #define ConfigResponse_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UINT32,   main_app_delay,    1) \
-X(a, STATIC,   SINGULAR, BOOL,     wifi_backup_enabled,   2) \
-X(a, STATIC,   SINGULAR, STRING,   wifi_ssid,         3) \
-X(a, STATIC,   SINGULAR, STRING,   wifi_password,     4) \
 X(a, STATIC,   SINGULAR, FLOAT,    conductivity_factor,   5) \
 X(a, STATIC,   SINGULAR, FLOAT,    moisture_factor,   6) \
 X(a, STATIC,   SINGULAR, FLOAT,    ph_factor,         7) \
@@ -634,7 +617,7 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 /* Maximum encoded size of messages (where known) */
 #define Battery_size                             17
 #define ConfigRequest_size                       33
-#define ConfigResponse_size                      188
+#define ConfigResponse_size                      86
 #define FirmwareVersionRequest_size              33
 #define GpsUpdateRequest_size                    347
 #define HealthRequest_size                       135

@@ -220,19 +220,13 @@ message FirmwareVersionRequest {
 // Node configuration fetched via a GET right after connecting, alongside
 // HealthRequest -- looked up from the node_config table server-side.
 message ConfigResponse {
+    // WiFi backup was removed entirely (SIM is the only connection method
+    // this fleet uses) -- reserved so these field numbers/names are never
+    // silently reused by a future field.
+    reserved 2, 3, 4;
+    reserved "wifi_backup_enabled", "wifi_ssid", "wifi_password";
+
     uint32 main_app_delay = 1; // seconds between check-in cycles
-
-    // If true, a wake whose primary (SIM) connection fails to come up
-    // retries once over WiFi before giving up on the wake entirely. Doesn't
-    // change the primary connection method -- SIM is still tried first on
-    // every wake regardless of this flag.
-    bool wifi_backup_enabled = 2;
-
-    // Credentials for the WiFi backup connection above. Consumers may treat
-    // an empty value as "no change" and keep whatever WiFi credentials
-    // (build-time default or previously configured) they already have.
-    string wifi_ssid     = 3;
-    string wifi_password = 4;
 
     // Per-channel calibration factors applied to raw sensor readings.
     // Default to 1.0 (no adjustment) when not configured server-side.
@@ -256,10 +250,9 @@ message ConfigResponse {
     // bands actually present at this device's deployment site instead of
     // scanning every band the module supports -- shortens registration
     // time (and the power it costs) on every wake. Empty means "no change,
-    // leave whatever mask (or lack of one) is already applied" -- same
-    // convention as wifi_ssid/wifi_password above, since proto3 singular
-    // strings have no field-presence flag to distinguish "unset" from
-    // "explicitly cleared". Applied to the modem every boot in nitra's
+    // leave whatever mask (or lack of one) is already applied", since
+    // proto3 singular strings have no field-presence flag to distinguish
+    // "unset" from "explicitly cleared". Applied to the modem every boot in nitra's
     // SimModem::stepInit() via ATCommandHndlr::setLteBandMask().
     string lte_bandmask = 14;
 }
