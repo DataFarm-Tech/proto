@@ -40,6 +40,27 @@ message Battery {
   float soc      = 2; // state of charge, percent 0-100
   bool  charging = 3; // true if actively charging (e.g. solar input present)
   float temp_c   = 4; // battery temperature, Celsius
+
+  // PMU readings that travel with the battery block. Optional so "not reported"
+  // (older firmware) is distinguishable from a real zero -- vbus_v is legitimately
+  // 0 when nothing is plugged in.
+  optional float vbus_v     = 5; // volts at the VBUS input (USB/solar); 0 = no input
+  optional float vsys_v     = 6; // volts on the system rail the board actually runs from
+  // The PMIC's own die temperature, Celsius -- a rough proxy for enclosure heat.
+  // NOT the battery's temperature (that is temp_c, which this hardware cannot measure).
+  optional float die_temp_c = 7;
+  ChargerState charger_state = 8; // CHARGER_UNKNOWN (0) when not reported
+}
+
+// What the PMU charger is doing, finer than Battery.charging's yes/no.
+enum ChargerState {
+  CHARGER_UNKNOWN        = 0; // not reported (older firmware, or an unrecognised PMU value)
+  CHARGER_NOT_CHARGING   = 1; // idle / stopped / no input
+  CHARGER_TRICKLE        = 2;
+  CHARGER_PRECHARGE      = 3;
+  CHARGER_CONSTANT_CURRENT = 4;
+  CHARGER_CONSTANT_VOLTAGE = 5;
+  CHARGER_DONE           = 6;
 }
 
 message Position {

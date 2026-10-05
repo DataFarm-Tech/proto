@@ -10,6 +10,17 @@
 #endif
 
 /* Enum definitions */
+/* What the PMU charger is doing, finer than Battery.charging's yes/no. */
+typedef enum _ChargerState {
+    ChargerState_CHARGER_UNKNOWN = 0, /* not reported (older firmware, or an unrecognised PMU value) */
+    ChargerState_CHARGER_NOT_CHARGING = 1, /* idle / stopped / no input */
+    ChargerState_CHARGER_TRICKLE = 2,
+    ChargerState_CHARGER_PRECHARGE = 3,
+    ChargerState_CHARGER_CONSTANT_CURRENT = 4,
+    ChargerState_CHARGER_CONSTANT_VOLTAGE = 5,
+    ChargerState_CHARGER_DONE = 6
+} ChargerState;
+
 typedef enum _RATType {
     RATType_LTE_M = 0, /* LTE-M (Cat-M1) cellular RAT */
     RATType_NB_IoT = 1 /* NB-IoT (Cat-NB1) cellular RAT */
@@ -27,6 +38,18 @@ typedef struct _Battery {
     float soc; /* state of charge, percent 0-100 */
     bool charging; /* true if actively charging (e.g. solar input present) */
     float temp_c; /* battery temperature, Celsius */
+    /* PMU readings that travel with the battery block. Optional so "not reported"
+ (older firmware) is distinguishable from a real zero -- vbus_v is legitimately
+ 0 when nothing is plugged in. */
+    bool has_vbus_v;
+    float vbus_v; /* volts at the VBUS input (USB/solar); 0 = no input */
+    bool has_vsys_v;
+    float vsys_v; /* volts on the system rail the board actually runs from */
+    /* The PMIC's own die temperature, Celsius -- a rough proxy for enclosure heat.
+ NOT the battery's temperature (that is temp_c, which this hardware cannot measure). */
+    bool has_die_temp_c;
+    float die_temp_c;
+    ChargerState charger_state; /* CHARGER_UNKNOWN (0) when not reported */
 } Battery;
 
 typedef struct _Position {
@@ -318,12 +341,17 @@ extern "C" {
 #endif
 
 /* Helper constants for enums */
+#define _ChargerState_MIN ChargerState_CHARGER_UNKNOWN
+#define _ChargerState_MAX ChargerState_CHARGER_DONE
+#define _ChargerState_ARRAYSIZE ((ChargerState)(ChargerState_CHARGER_DONE+1))
+
 #define _RATType_MIN RATType_LTE_M
 #define _RATType_MAX RATType_NB_IoT
 #define _RATType_ARRAYSIZE ((RATType)(RATType_NB_IoT+1))
 
 
 
+#define Battery_charger_state_ENUMTYPE ChargerState
 
 
 
@@ -343,7 +371,7 @@ extern "C" {
 /* Initializer values for message structs */
 #define GpsUpdateRequest_init_default            {"", false, Position_init_default, false, Battery_init_default, false, OtaStatus_init_default, false, NetStat_init_default, "", "", false, NetInfo_init_default}
 #define OtaStatus_init_default                   {"", 0, 0}
-#define Battery_init_default                     {0, 0, 0, 0}
+#define Battery_init_default                     {0, 0, 0, 0, false, 0, false, 0, false, 0, _ChargerState_MIN}
 #define Position_init_default                    {0, 0, 0, 0, 0, 0, 0, 0}
 #define NetInfo_init_default                     {"", "", ""}
 #define NetStat_init_default                     {0, 0, "", {0, {0}}, 0, 0, 0, 0, 0, 0, 0}
@@ -359,7 +387,7 @@ extern "C" {
 #define WalkTestPoint_init_default               {"", false, Position_init_default, false, NetStat_init_default, 0, 0}
 #define GpsUpdateRequest_init_zero               {"", false, Position_init_zero, false, Battery_init_zero, false, OtaStatus_init_zero, false, NetStat_init_zero, "", "", false, NetInfo_init_zero}
 #define OtaStatus_init_zero                      {"", 0, 0}
-#define Battery_init_zero                        {0, 0, 0, 0}
+#define Battery_init_zero                        {0, 0, 0, 0, false, 0, false, 0, false, 0, _ChargerState_MIN}
 #define Position_init_zero                       {0, 0, 0, 0, 0, 0, 0, 0}
 #define NetInfo_init_zero                        {"", "", ""}
 #define NetStat_init_zero                        {0, 0, "", {0, {0}}, 0, 0, 0, 0, 0, 0, 0}
@@ -382,6 +410,10 @@ extern "C" {
 #define Battery_soc_tag                          2
 #define Battery_charging_tag                     3
 #define Battery_temp_c_tag                       4
+#define Battery_vbus_v_tag                       5
+#define Battery_vsys_v_tag                       6
+#define Battery_die_temp_c_tag                   7
+#define Battery_charger_state_tag                8
 #define Position_lat_tag                         1
 #define Position_lon_tag                         2
 #define Position_fix_time_tag                    3
@@ -488,7 +520,11 @@ X(a, STATIC,   SINGULAR, UINT32,   boot_count,        3)
 X(a, STATIC,   SINGULAR, FLOAT,    voltage,           1) \
 X(a, STATIC,   SINGULAR, FLOAT,    soc,               2) \
 X(a, STATIC,   SINGULAR, BOOL,     charging,          3) \
-X(a, STATIC,   SINGULAR, FLOAT,    temp_c,            4)
+X(a, STATIC,   SINGULAR, FLOAT,    temp_c,            4) \
+X(a, STATIC,   OPTIONAL, FLOAT,    vbus_v,            5) \
+X(a, STATIC,   OPTIONAL, FLOAT,    vsys_v,            6) \
+X(a, STATIC,   OPTIONAL, FLOAT,    die_temp_c,        7) \
+X(a, STATIC,   SINGULAR, UENUM,    charger_state,     8)
 #define Battery_CALLBACK NULL
 #define Battery_DEFAULT NULL
 
@@ -651,11 +687,11 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 #define WalkTestPoint_fields &WalkTestPoint_msg
 
 /* Maximum encoded size of messages (where known) */
-#define Battery_size                             17
+#define Battery_size                             34
 #define ConfigRequest_size                       33
 #define ConfigResponse_size                      88
 #define FirmwareVersionRequest_size              33
-#define GpsUpdateRequest_size                    359
+#define GpsUpdateRequest_size                    376
 #define HealthRequest_size                       141
 #define LogChunk_size                            653
 #define NetInfo_size                             59
