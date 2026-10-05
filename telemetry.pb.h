@@ -263,6 +263,14 @@ typedef struct _ConfigResponse {
  "unset" from "explicitly cleared". Applied to the modem every boot in nitra's
  SimModem::stepInit() via ATCommandHndlr::setLteBandMask(). */
     char lte_bandmask[40];
+    /* Whether the device uploads its system log (POST /log) at the end of a
+ cycle. Optional so "not sent" is distinguishable from "false": an older
+ server that predates this field leaves it unset and the device keeps
+ uploading, instead of reading proto3's default false as "disabled".
+ The log is still written to the device's own flash either way (it
+ rotates at a fixed size) -- this only gates the upload. */
+    bool has_device_logging_enabled;
+    bool device_logging_enabled;
 } ConfigResponse;
 
 /* One chunk of the node's system.log file, sent right after HealthRequest
@@ -346,7 +354,7 @@ extern "C" {
 #define HealthRequest_init_default               {"", "", "", 0, 0, 0, 0, 0, 0, 0}
 #define ConfigRequest_init_default               {""}
 #define FirmwareVersionRequest_init_default      {""}
-#define ConfigResponse_init_default              {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, ""}
+#define ConfigResponse_init_default              {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, "", false, 0}
 #define LogChunk_init_default                    {"", 0, 0, 0, ""}
 #define WalkTestPoint_init_default               {"", false, Position_init_default, false, NetStat_init_default, 0, 0}
 #define GpsUpdateRequest_init_zero               {"", false, Position_init_zero, false, Battery_init_zero, false, OtaStatus_init_zero, false, NetStat_init_zero, "", "", false, NetInfo_init_zero}
@@ -362,7 +370,7 @@ extern "C" {
 #define HealthRequest_init_zero                  {"", "", "", 0, 0, 0, 0, 0, 0, 0}
 #define ConfigRequest_init_zero                  {""}
 #define FirmwareVersionRequest_init_zero         {""}
-#define ConfigResponse_init_zero                 {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, ""}
+#define ConfigResponse_init_zero                 {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, "", false, 0}
 #define LogChunk_init_zero                       {"", 0, 0, 0, ""}
 #define WalkTestPoint_init_zero                  {"", false, Position_init_zero, false, NetStat_init_zero, 0, 0}
 
@@ -439,6 +447,7 @@ extern "C" {
 #define ConfigResponse_rat_type_tag              12
 #define ConfigResponse_gps_every_cycle_tag       13
 #define ConfigResponse_lte_bandmask_tag          14
+#define ConfigResponse_device_logging_enabled_tag 15
 #define LogChunk_node_id_tag                     1
 #define LogChunk_upload_id_tag                   2
 #define LogChunk_chunk_index_tag                 3
@@ -581,7 +590,8 @@ X(a, STATIC,   SINGULAR, FLOAT,    potassium_factor,  10) \
 X(a, STATIC,   SINGULAR, FLOAT,    temperature_factor,  11) \
 X(a, STATIC,   SINGULAR, UENUM,    rat_type,         12) \
 X(a, STATIC,   SINGULAR, BOOL,     gps_every_cycle,  13) \
-X(a, STATIC,   SINGULAR, STRING,   lte_bandmask,     14)
+X(a, STATIC,   SINGULAR, STRING,   lte_bandmask,     14) \
+X(a, STATIC,   OPTIONAL, BOOL,     device_logging_enabled,  15)
 #define ConfigResponse_CALLBACK NULL
 #define ConfigResponse_DEFAULT NULL
 
@@ -643,7 +653,7 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 /* Maximum encoded size of messages (where known) */
 #define Battery_size                             17
 #define ConfigRequest_size                       33
-#define ConfigResponse_size                      86
+#define ConfigResponse_size                      88
 #define FirmwareVersionRequest_size              33
 #define GpsUpdateRequest_size                    359
 #define HealthRequest_size                       141

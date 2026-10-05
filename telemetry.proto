@@ -277,6 +277,14 @@ message ConfigResponse {
     // "unset" from "explicitly cleared". Applied to the modem every boot in nitra's
     // SimModem::stepInit() via ATCommandHndlr::setLteBandMask().
     string lte_bandmask = 14;
+
+    // Whether the device uploads its system log (POST /log) at the end of a
+    // cycle. Optional so "not sent" is distinguishable from "false": an older
+    // server that predates this field leaves it unset and the device keeps
+    // uploading, instead of reading proto3's default false as "disabled".
+    // The log is still written to the device's own flash either way (it
+    // rotates at a fixed size) -- this only gates the upload.
+    optional bool device_logging_enabled = 15;
 }
 
 enum RATType {
