@@ -93,6 +93,15 @@ message NetStat {
   // discrepancy against Quectel's own documentation (see the firmware's
   // SignalQuality struct doc comment).
   sint32 rssi = 9;
+
+  // Network-registration reliability, lifetime counters kept in the device's NVS
+  // (reset only by an NVS erase): reg_attempts is how many times a wake tried
+  // to register on the network (one per connect(), however long the cell search
+  // ran), reg_successes how many of those reached the network. Sent as a pair
+  // so the server can show "x/y". 0/0 means a firmware that predates these
+  // fields, not a device that never tried.
+  uint32 reg_attempts  = 10;
+  uint32 reg_successes = 11;
 }
 
 message ReadingRequest {

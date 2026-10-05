@@ -76,6 +76,14 @@ typedef struct _NetStat {
  discrepancy against Quectel's own documentation (see the firmware's
  SignalQuality struct doc comment). */
     int32_t rssi;
+    /* Network-registration reliability, lifetime counters kept in the device's NVS
+ (reset only by an NVS erase): reg_attempts is how many times a wake tried
+ to register on the network (one per connect(), however long the cell search
+ ran), reg_successes how many of those reached the network. Sent as a pair
+ so the server can show "x/y". 0/0 means a firmware that predates these
+ fields, not a device that never tried. */
+    uint32_t reg_attempts;
+    uint32_t reg_successes;
 } NetStat;
 
 /* Manufacturing/hardware identity that used to travel only in the
@@ -330,7 +338,7 @@ extern "C" {
 #define Battery_init_default                     {0, 0, 0, 0}
 #define Position_init_default                    {0, 0, 0, 0, 0, 0, 0, 0}
 #define NetInfo_init_default                     {"", "", ""}
-#define NetStat_init_default                     {0, 0, "", {0, {0}}, 0, 0, 0, 0, 0}
+#define NetStat_init_default                     {0, 0, "", {0, {0}}, 0, 0, 0, 0, 0, 0, 0}
 #define ReadingRequest_init_default              {"", "", 0, 0, 0}
 #define ReadingBatchRequest_init_default         {"", 0, 0, {ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default}, 0}
 #define ReadingEntry_init_default                {"", 0}
@@ -346,7 +354,7 @@ extern "C" {
 #define Battery_init_zero                        {0, 0, 0, 0}
 #define Position_init_zero                       {0, 0, 0, 0, 0, 0, 0, 0}
 #define NetInfo_init_zero                        {"", "", ""}
-#define NetStat_init_zero                        {0, 0, "", {0, {0}}, 0, 0, 0, 0, 0}
+#define NetStat_init_zero                        {0, 0, "", {0, {0}}, 0, 0, 0, 0, 0, 0, 0}
 #define ReadingRequest_init_zero                 {"", "", 0, 0, 0}
 #define ReadingBatchRequest_init_zero            {"", 0, 0, {ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero}, 0}
 #define ReadingEntry_init_zero                   {"", 0}
@@ -386,6 +394,8 @@ extern "C" {
 #define NetStat_rat_tag                          7
 #define NetStat_rsrp_tag                         8
 #define NetStat_rssi_tag                         9
+#define NetStat_reg_attempts_tag                 10
+#define NetStat_reg_successes_tag                11
 #define GpsUpdateRequest_node_id_tag             1
 #define GpsUpdateRequest_position_tag            2
 #define GpsUpdateRequest_battery_tag             3
@@ -501,7 +511,9 @@ X(a, STATIC,   SINGULAR, UINT32,   band,              5) \
 X(a, STATIC,   SINGULAR, UINT32,   lac,               6) \
 X(a, STATIC,   SINGULAR, UINT32,   rat,               7) \
 X(a, STATIC,   SINGULAR, SINT32,   rsrp,              8) \
-X(a, STATIC,   SINGULAR, SINT32,   rssi,              9)
+X(a, STATIC,   SINGULAR, SINT32,   rssi,              9) \
+X(a, STATIC,   SINGULAR, UINT32,   reg_attempts,     10) \
+X(a, STATIC,   SINGULAR, UINT32,   reg_successes,    11)
 #define NetStat_CALLBACK NULL
 #define NetStat_DEFAULT NULL
 
@@ -633,11 +645,11 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 #define ConfigRequest_size                       33
 #define ConfigResponse_size                      86
 #define FirmwareVersionRequest_size              33
-#define GpsUpdateRequest_size                    347
+#define GpsUpdateRequest_size                    359
 #define HealthRequest_size                       141
 #define LogChunk_size                            653
 #define NetInfo_size                             59
-#define NetStat_size                             85
+#define NetStat_size                             97
 #define OtaStatus_size                           41
 #define Position_size                            36
 #define ReadingBatchRequest_size                 241
@@ -645,7 +657,7 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 #define ReadingRequest_size                      71
 #define StringValue_size                         514
 #define TELEMETRY_PB_H_MAX_SIZE                  LogChunk_size
-#define WalkTestPoint_size                       165
+#define WalkTestPoint_size                       177
 
 #ifdef __cplusplus
 } /* extern "C" */
