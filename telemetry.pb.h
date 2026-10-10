@@ -21,6 +21,14 @@ typedef enum _ChargerState {
     ChargerState_CHARGER_DONE = 6
 } ChargerState;
 
+/* How the modem is treated during the deep-sleep interval. Names are read by
+ netlink as strings (node_config.modem_power_mode), like RATType. */
+typedef enum _ModemPowerMode {
+    ModemPowerMode_POWER_OFF = 0, /* modem powered off completely; full re-attach every cycle */
+    ModemPowerMode_PSM = 1, /* modem stays powered and attached, sleeping in Power Saving Mode */
+    ModemPowerMode_ALWAYS_ON = 2 /* modem stays powered and awake (highest drain; for testing) */
+} ModemPowerMode;
+
 typedef enum _RATType {
     RATType_LTE_M = 0, /* LTE-M (Cat-M1) cellular RAT */
     RATType_NB_IoT = 1 /* NB-IoT (Cat-NB1) cellular RAT */
@@ -294,6 +302,14 @@ typedef struct _ConfigResponse {
  rotates at a fixed size) -- this only gates the upload. */
     bool has_device_logging_enabled;
     bool device_logging_enabled;
+    /* What the SIM7080 modem does while the device deep-sleeps between cycles.
+ Optional so "not sent" is distinguishable from a real choice: an older
+ server leaves it unset and the device keeps whatever mode it already has.
+ Applied from the next cycle (the device saves it and the modem setup
+ reads it at startup). Ignored on boards whose modem has no PSM/PMU
+ power control (EC25AU). */
+    bool has_modem_power_mode;
+    ModemPowerMode modem_power_mode;
 } ConfigResponse;
 
 /* One chunk of the node's system.log file, sent right after HealthRequest
@@ -345,6 +361,10 @@ extern "C" {
 #define _ChargerState_MAX ChargerState_CHARGER_DONE
 #define _ChargerState_ARRAYSIZE ((ChargerState)(ChargerState_CHARGER_DONE+1))
 
+#define _ModemPowerMode_MIN ModemPowerMode_POWER_OFF
+#define _ModemPowerMode_MAX ModemPowerMode_ALWAYS_ON
+#define _ModemPowerMode_ARRAYSIZE ((ModemPowerMode)(ModemPowerMode_ALWAYS_ON+1))
+
 #define _RATType_MIN RATType_LTE_M
 #define _RATType_MAX RATType_NB_IoT
 #define _RATType_ARRAYSIZE ((RATType)(RATType_NB_IoT+1))
@@ -364,6 +384,7 @@ extern "C" {
 
 
 #define ConfigResponse_rat_type_ENUMTYPE RATType
+#define ConfigResponse_modem_power_mode_ENUMTYPE ModemPowerMode
 
 
 
@@ -382,7 +403,7 @@ extern "C" {
 #define HealthRequest_init_default               {"", "", "", 0, 0, 0, 0, 0, 0, 0}
 #define ConfigRequest_init_default               {""}
 #define FirmwareVersionRequest_init_default      {""}
-#define ConfigResponse_init_default              {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, "", false, 0}
+#define ConfigResponse_init_default              {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, "", false, 0, false, _ModemPowerMode_MIN}
 #define LogChunk_init_default                    {"", 0, 0, 0, ""}
 #define WalkTestPoint_init_default               {"", false, Position_init_default, false, NetStat_init_default, 0, 0}
 #define GpsUpdateRequest_init_zero               {"", false, Position_init_zero, false, Battery_init_zero, false, OtaStatus_init_zero, false, NetStat_init_zero, "", "", false, NetInfo_init_zero}
@@ -398,7 +419,7 @@ extern "C" {
 #define HealthRequest_init_zero                  {"", "", "", 0, 0, 0, 0, 0, 0, 0}
 #define ConfigRequest_init_zero                  {""}
 #define FirmwareVersionRequest_init_zero         {""}
-#define ConfigResponse_init_zero                 {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, "", false, 0}
+#define ConfigResponse_init_zero                 {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, "", false, 0, false, _ModemPowerMode_MIN}
 #define LogChunk_init_zero                       {"", 0, 0, 0, ""}
 #define WalkTestPoint_init_zero                  {"", false, Position_init_zero, false, NetStat_init_zero, 0, 0}
 
@@ -480,6 +501,7 @@ extern "C" {
 #define ConfigResponse_gps_every_cycle_tag       13
 #define ConfigResponse_lte_bandmask_tag          14
 #define ConfigResponse_device_logging_enabled_tag 15
+#define ConfigResponse_modem_power_mode_tag      16
 #define LogChunk_node_id_tag                     1
 #define LogChunk_upload_id_tag                   2
 #define LogChunk_chunk_index_tag                 3
@@ -627,7 +649,8 @@ X(a, STATIC,   SINGULAR, FLOAT,    temperature_factor,  11) \
 X(a, STATIC,   SINGULAR, UENUM,    rat_type,         12) \
 X(a, STATIC,   SINGULAR, BOOL,     gps_every_cycle,  13) \
 X(a, STATIC,   SINGULAR, STRING,   lte_bandmask,     14) \
-X(a, STATIC,   OPTIONAL, BOOL,     device_logging_enabled,  15)
+X(a, STATIC,   OPTIONAL, BOOL,     device_logging_enabled,  15) \
+X(a, STATIC,   OPTIONAL, UENUM,    modem_power_mode,  16)
 #define ConfigResponse_CALLBACK NULL
 #define ConfigResponse_DEFAULT NULL
 
@@ -689,7 +712,7 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 /* Maximum encoded size of messages (where known) */
 #define Battery_size                             34
 #define ConfigRequest_size                       33
-#define ConfigResponse_size                      88
+#define ConfigResponse_size                      91
 #define FirmwareVersionRequest_size              33
 #define GpsUpdateRequest_size                    376
 #define HealthRequest_size                       141

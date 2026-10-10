@@ -306,6 +306,22 @@ message ConfigResponse {
     // The log is still written to the device's own flash either way (it
     // rotates at a fixed size) -- this only gates the upload.
     optional bool device_logging_enabled = 15;
+
+    // What the SIM7080 modem does while the device deep-sleeps between cycles.
+    // Optional so "not sent" is distinguishable from a real choice: an older
+    // server leaves it unset and the device keeps whatever mode it already has.
+    // Applied from the next cycle (the device saves it and the modem setup
+    // reads it at startup). Ignored on boards whose modem has no PSM/PMU
+    // power control (EC25AU).
+    optional ModemPowerMode modem_power_mode = 16;
+}
+
+// How the modem is treated during the deep-sleep interval. Names are read by
+// netlink as strings (node_config.modem_power_mode), like RATType.
+enum ModemPowerMode {
+    POWER_OFF = 0;  // modem powered off completely; full re-attach every cycle
+    PSM       = 1;  // modem stays powered and attached, sleeping in Power Saving Mode
+    ALWAYS_ON = 2;  // modem stays powered and awake (highest drain; for testing)
 }
 
 enum RATType {
