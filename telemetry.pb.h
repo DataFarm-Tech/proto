@@ -324,6 +324,12 @@ typedef struct _HealthResponse {
  to hand yet (or the lookup failed): the device skips the OTA check this cycle. */
     bool has_latest_fw_version;
     char latest_fw_version[128];
+    /* The server's wall-clock time (Unix epoch milliseconds) taken as the reply was built, so
+ the device can set its clock from the ping instead of making an NTP exchange of its own.
+ The device adds half of the ping's measured round trip for the way back. Absent from an
+ older server: the clock is then left as it is. */
+    bool has_server_time_ms;
+    uint64_t server_time_ms;
 } HealthResponse;
 
 /* One chunk of the node's system.log file, sent right after HealthRequest
@@ -415,7 +421,7 @@ extern "C" {
 #define ReadingEntry_init_default                {"", 0}
 #define StringValue_init_default                 {""}
 #define HealthRequest_init_default               {"", "", "", 0, 0, 0, 0, 0, 0, 0, ""}
-#define HealthResponse_init_default              {0, false, ConfigResponse_init_default, false, ""}
+#define HealthResponse_init_default              {0, false, ConfigResponse_init_default, false, "", false, 0}
 #define FirmwareVersionRequest_init_default      {""}
 #define ConfigResponse_init_default              {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, "", false, 0, false, _ModemPowerMode_MIN}
 #define LogChunk_init_default                    {"", 0, 0, 0, ""}
@@ -431,7 +437,7 @@ extern "C" {
 #define ReadingEntry_init_zero                   {"", 0}
 #define StringValue_init_zero                    {""}
 #define HealthRequest_init_zero                  {"", "", "", 0, 0, 0, 0, 0, 0, 0, ""}
-#define HealthResponse_init_zero                 {0, false, ConfigResponse_init_zero, false, ""}
+#define HealthResponse_init_zero                 {0, false, ConfigResponse_init_zero, false, "", false, 0}
 #define FirmwareVersionRequest_init_zero         {""}
 #define ConfigResponse_init_zero                 {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, "", false, 0, false, _ModemPowerMode_MIN}
 #define LogChunk_init_zero                       {"", 0, 0, 0, ""}
@@ -519,6 +525,7 @@ extern "C" {
 #define HealthResponse_ack_tag                   1
 #define HealthResponse_config_tag                2
 #define HealthResponse_latest_fw_version_tag     3
+#define HealthResponse_server_time_ms_tag        4
 #define LogChunk_node_id_tag                     1
 #define LogChunk_upload_id_tag                   2
 #define LogChunk_chunk_index_tag                 3
@@ -648,7 +655,8 @@ X(a, STATIC,   SINGULAR, STRING,   hw_ver,           11)
 #define HealthResponse_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, BOOL,     ack,               1) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  config,            2) \
-X(a, STATIC,   OPTIONAL, STRING,   latest_fw_version,   3)
+X(a, STATIC,   OPTIONAL, STRING,   latest_fw_version,   3) \
+X(a, STATIC,   OPTIONAL, UINT64,   server_time_ms,    4)
 #define HealthResponse_CALLBACK NULL
 #define HealthResponse_DEFAULT NULL
 #define HealthResponse_config_MSGTYPE ConfigResponse
@@ -736,7 +744,7 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 #define FirmwareVersionRequest_size              33
 #define GpsUpdateRequest_size                    376
 #define HealthRequest_size                       174
-#define HealthResponse_size                      225
+#define HealthResponse_size                      236
 #define LogChunk_size                            653
 #define NetInfo_size                             59
 #define NetStat_size                             97

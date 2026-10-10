@@ -264,6 +264,12 @@ message HealthResponse {
     // the OTA check needs no exchange of its own. Absent when the server has no value
     // to hand yet (or the lookup failed): the device skips the OTA check this cycle.
     optional string latest_fw_version = 3;
+
+    // The server's wall-clock time (Unix epoch milliseconds) taken as the reply was built, so
+    // the device can set its clock from the ping instead of making an NTP exchange of its own.
+    // The device adds half of the ping's measured round trip for the way back. Absent from an
+    // older server: the clock is then left as it is.
+    optional uint64 server_time_ms = 4;
 }
 
 // Sent as the body of the firmware-version-check request (a CoAP FETCH, not
