@@ -240,6 +240,10 @@ message HealthRequest {
     // wall-clock time, so it stays correct across an NTP resync mid-cycle.
     // 0 if no prior measurement is available yet.
     uint32 prev_cycle_duration_s = 10;
+
+    // The node's hardware version, so the reply can say whether the latest firmware
+    // release supports it (HealthResponse.latest_fw_version).
+    string hw_ver = 11;
 }
 
 // The server's reply to a HealthRequest. The node's configuration rides back in
@@ -253,6 +257,13 @@ message HealthResponse {
     // Absent if the server could not look the config up this time: the ping
     // itself still succeeded, and the device keeps the config it already has.
     optional ConfigResponse config = 2;
+
+    // The latest firmware release for this node: the raw version.txt content
+    // ("{version}\nsha256={hash}\n"), or "EOL" if hw_ver is not supported by that
+    // release -- the same string the standalone firmware-version check returns, so
+    // the OTA check needs no exchange of its own. Absent when the server has no value
+    // to hand yet (or the lookup failed): the device skips the OTA check this cycle.
+    optional string latest_fw_version = 3;
 }
 
 // Sent as the body of the firmware-version-check request (a CoAP FETCH, not

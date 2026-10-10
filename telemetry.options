@@ -23,6 +23,10 @@ StringValue.value  max_size:512
 HealthRequest.node_id     max_size:32
 HealthRequest.boot_reason max_size:32
 HealthRequest.fw_ver      max_size:32
+HealthRequest.hw_ver      max_size:32
+
+# version.txt is "{version}\nsha256={64 hex chars}\n", so this is larger than the other strings.
+HealthResponse.latest_fw_version max_size:128
 
 
 # Matches GpsUpdateRequest.hw_ver's own sizing above.

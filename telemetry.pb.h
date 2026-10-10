@@ -245,6 +245,9 @@ typedef struct _HealthRequest {
  wall-clock time, so it stays correct across an NTP resync mid-cycle.
  0 if no prior measurement is available yet. */
     uint32_t prev_cycle_duration_s;
+    /* The node's hardware version, so the reply can say whether the latest firmware
+ release supports it (HealthResponse.latest_fw_version). */
+    char hw_ver[32];
 } HealthRequest;
 
 /* Sent as the body of the firmware-version-check request (a CoAP FETCH, not
@@ -314,6 +317,13 @@ typedef struct _HealthResponse {
  itself still succeeded, and the device keeps the config it already has. */
     bool has_config;
     ConfigResponse config;
+    /* The latest firmware release for this node: the raw version.txt content
+ ("{version}\nsha256={hash}\n"), or "EOL" if hw_ver is not supported by that
+ release -- the same string the standalone firmware-version check returns, so
+ the OTA check needs no exchange of its own. Absent when the server has no value
+ to hand yet (or the lookup failed): the device skips the OTA check this cycle. */
+    bool has_latest_fw_version;
+    char latest_fw_version[128];
 } HealthResponse;
 
 /* One chunk of the node's system.log file, sent right after HealthRequest
@@ -404,8 +414,8 @@ extern "C" {
 #define ReadingBatchRequest_init_default         {"", 0, 0, {ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default}, 0}
 #define ReadingEntry_init_default                {"", 0}
 #define StringValue_init_default                 {""}
-#define HealthRequest_init_default               {"", "", "", 0, 0, 0, 0, 0, 0, 0}
-#define HealthResponse_init_default              {0, false, ConfigResponse_init_default}
+#define HealthRequest_init_default               {"", "", "", 0, 0, 0, 0, 0, 0, 0, ""}
+#define HealthResponse_init_default              {0, false, ConfigResponse_init_default, false, ""}
 #define FirmwareVersionRequest_init_default      {""}
 #define ConfigResponse_init_default              {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, "", false, 0, false, _ModemPowerMode_MIN}
 #define LogChunk_init_default                    {"", 0, 0, 0, ""}
@@ -420,8 +430,8 @@ extern "C" {
 #define ReadingBatchRequest_init_zero            {"", 0, 0, {ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero}, 0}
 #define ReadingEntry_init_zero                   {"", 0}
 #define StringValue_init_zero                    {""}
-#define HealthRequest_init_zero                  {"", "", "", 0, 0, 0, 0, 0, 0, 0}
-#define HealthResponse_init_zero                 {0, false, ConfigResponse_init_zero}
+#define HealthRequest_init_zero                  {"", "", "", 0, 0, 0, 0, 0, 0, 0, ""}
+#define HealthResponse_init_zero                 {0, false, ConfigResponse_init_zero, false, ""}
 #define FirmwareVersionRequest_init_zero         {""}
 #define ConfigResponse_init_zero                 {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, "", false, 0, false, _ModemPowerMode_MIN}
 #define LogChunk_init_zero                       {"", 0, 0, 0, ""}
@@ -491,6 +501,7 @@ extern "C" {
 #define HealthRequest_prev_cycle_exchanges_succeeded_tag 8
 #define HealthRequest_prev_cycle_gps_fix_ms_tag  9
 #define HealthRequest_prev_cycle_duration_s_tag  10
+#define HealthRequest_hw_ver_tag                 11
 #define FirmwareVersionRequest_hw_ver_tag        1
 #define ConfigResponse_main_app_delay_tag        1
 #define ConfigResponse_conductivity_factor_tag   5
@@ -507,6 +518,7 @@ extern "C" {
 #define ConfigResponse_modem_power_mode_tag      16
 #define HealthResponse_ack_tag                   1
 #define HealthResponse_config_tag                2
+#define HealthResponse_latest_fw_version_tag     3
 #define LogChunk_node_id_tag                     1
 #define LogChunk_upload_id_tag                   2
 #define LogChunk_chunk_index_tag                 3
@@ -628,13 +640,15 @@ X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_fs_used_bytes,   6) \
 X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_exchanges_attempted,   7) \
 X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_exchanges_succeeded,   8) \
 X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_gps_fix_ms,   9) \
-X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_duration_s,  10)
+X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_duration_s,  10) \
+X(a, STATIC,   SINGULAR, STRING,   hw_ver,           11)
 #define HealthRequest_CALLBACK NULL
 #define HealthRequest_DEFAULT NULL
 
 #define HealthResponse_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, BOOL,     ack,               1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  config,            2)
+X(a, STATIC,   OPTIONAL, MESSAGE,  config,            2) \
+X(a, STATIC,   OPTIONAL, STRING,   latest_fw_version,   3)
 #define HealthResponse_CALLBACK NULL
 #define HealthResponse_DEFAULT NULL
 #define HealthResponse_config_MSGTYPE ConfigResponse
@@ -721,8 +735,8 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 #define ConfigResponse_size                      91
 #define FirmwareVersionRequest_size              33
 #define GpsUpdateRequest_size                    376
-#define HealthRequest_size                       141
-#define HealthResponse_size                      95
+#define HealthRequest_size                       174
+#define HealthResponse_size                      225
 #define LogChunk_size                            653
 #define NetInfo_size                             59
 #define NetStat_size                             97
