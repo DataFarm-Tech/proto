@@ -242,26 +242,30 @@ message HealthRequest {
     uint32 prev_cycle_duration_s = 10;
 }
 
-// Sent alongside the GET to /config so the server knows which node's
-// config to look up -- the request itself carries no other CoAP-level
-// identity, unlike POST/PUT endpoints where node_id travels with the rest
-// of the payload.
-message ConfigRequest {
-    string node_id = 1;
+// The server's reply to a HealthRequest. The node's configuration rides back in
+// the ping's own response, so a check-in needs one round trip instead of a ping
+// followed by a separate config fetch -- there is no standalone config endpoint.
+message HealthResponse {
+    // Always true. Without it a reply that carries no config would encode to zero
+    // bytes, and the firmware treats an empty response body as a failed exchange.
+    bool ack = 1;
+
+    // Absent if the server could not look the config up this time: the ping
+    // itself still succeeded, and the device keeps the config it already has.
+    optional ConfigResponse config = 2;
 }
 
 // Sent as the body of the firmware-version-check request (a CoAP FETCH, not
 // a bare GET -- Californium's OSCORE layer rejects a payload on GET/DELETE
-// when reconstructing the decrypted inner request, same reason ConfigRequest
-// travels over FETCH rather than GET) so the server can refuse to offer an
+// when reconstructing the decrypted inner request) so the server can refuse to offer an
 // update to hardware the latest release no longer supports, instead of
 // unconditionally handing back the newest version regardless of hw_ver.
 message FirmwareVersionRequest {
     string hw_ver = 1;
 }
 
-// Node configuration fetched via a GET right after connecting, alongside
-// HealthRequest -- looked up from the node_config table server-side.
+// Node configuration, returned inside HealthResponse -- looked up from the
+// node_config table server-side.
 message ConfigResponse {
     // WiFi backup was removed entirely (SIM is the only connection method
     // this fleet uses) -- reserved so these field numbers/names are never

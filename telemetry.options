@@ -24,7 +24,6 @@ HealthRequest.node_id     max_size:32
 HealthRequest.boot_reason max_size:32
 HealthRequest.fw_ver      max_size:32
 
-ConfigRequest.node_id max_size:32
 
 # Matches GpsUpdateRequest.hw_ver's own sizing above.
 FirmwareVersionRequest.hw_ver max_size:32
