@@ -246,9 +246,17 @@ message HealthRequest {
     string hw_ver = 11;
 }
 
+// Sent to the legacy /config endpoint (FETCH) so the server knows which node's
+// config to look up. Only firmware that predates HealthResponse.config uses it;
+// current firmware gets its config in the health ping's reply instead.
+message ConfigRequest {
+    string node_id = 1;
+}
+
 // The server's reply to a HealthRequest. The node's configuration rides back in
 // the ping's own response, so a check-in needs one round trip instead of a ping
-// followed by a separate config fetch -- there is no standalone config endpoint.
+// followed by a separate config fetch. The standalone /config endpoint stays
+// only for older firmware that still fetches it.
 message HealthResponse {
     // Always true. Without it a reply that carries no config would encode to zero
     // bytes, and the firmware treats an empty response body as a failed exchange.

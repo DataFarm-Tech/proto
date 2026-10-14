@@ -250,6 +250,13 @@ typedef struct _HealthRequest {
     char hw_ver[32];
 } HealthRequest;
 
+/* Sent to the legacy /config endpoint (FETCH) so the server knows which node's
+ config to look up. Only firmware that predates HealthResponse.config uses it;
+ current firmware gets its config in the health ping's reply instead. */
+typedef struct _ConfigRequest {
+    char node_id[32];
+} ConfigRequest;
+
 /* Sent as the body of the firmware-version-check request (a CoAP FETCH, not
  a bare GET -- Californium's OSCORE layer rejects a payload on GET/DELETE
  when reconstructing the decrypted inner request) so the server can refuse to offer an
@@ -308,7 +315,8 @@ typedef struct _ConfigResponse {
 
 /* The server's reply to a HealthRequest. The node's configuration rides back in
  the ping's own response, so a check-in needs one round trip instead of a ping
- followed by a separate config fetch -- there is no standalone config endpoint. */
+ followed by a separate config fetch. The standalone /config endpoint stays
+ only for older firmware that still fetches it. */
 typedef struct _HealthResponse {
     /* Always true. Without it a reply that carries no config would encode to zero
  bytes, and the firmware treats an empty response body as a failed exchange. */
@@ -403,6 +411,7 @@ extern "C" {
 
 
 
+
 #define ConfigResponse_rat_type_ENUMTYPE RATType
 #define ConfigResponse_modem_power_mode_ENUMTYPE ModemPowerMode
 
@@ -421,6 +430,7 @@ extern "C" {
 #define ReadingEntry_init_default                {"", 0}
 #define StringValue_init_default                 {""}
 #define HealthRequest_init_default               {"", "", "", 0, 0, 0, 0, 0, 0, 0, ""}
+#define ConfigRequest_init_default               {""}
 #define HealthResponse_init_default              {0, false, ConfigResponse_init_default, false, "", false, 0}
 #define FirmwareVersionRequest_init_default      {""}
 #define ConfigResponse_init_default              {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, "", false, 0, false, _ModemPowerMode_MIN}
@@ -437,6 +447,7 @@ extern "C" {
 #define ReadingEntry_init_zero                   {"", 0}
 #define StringValue_init_zero                    {""}
 #define HealthRequest_init_zero                  {"", "", "", 0, 0, 0, 0, 0, 0, 0, ""}
+#define ConfigRequest_init_zero                  {""}
 #define HealthResponse_init_zero                 {0, false, ConfigResponse_init_zero, false, "", false, 0}
 #define FirmwareVersionRequest_init_zero         {""}
 #define ConfigResponse_init_zero                 {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, "", false, 0, false, _ModemPowerMode_MIN}
@@ -508,6 +519,7 @@ extern "C" {
 #define HealthRequest_prev_cycle_gps_fix_ms_tag  9
 #define HealthRequest_prev_cycle_duration_s_tag  10
 #define HealthRequest_hw_ver_tag                 11
+#define ConfigRequest_node_id_tag                1
 #define FirmwareVersionRequest_hw_ver_tag        1
 #define ConfigResponse_main_app_delay_tag        1
 #define ConfigResponse_conductivity_factor_tag   5
@@ -652,6 +664,11 @@ X(a, STATIC,   SINGULAR, STRING,   hw_ver,           11)
 #define HealthRequest_CALLBACK NULL
 #define HealthRequest_DEFAULT NULL
 
+#define ConfigRequest_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, STRING,   node_id,           1)
+#define ConfigRequest_CALLBACK NULL
+#define ConfigRequest_DEFAULT NULL
+
 #define HealthResponse_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, BOOL,     ack,               1) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  config,            2) \
@@ -714,6 +731,7 @@ extern const pb_msgdesc_t ReadingBatchRequest_msg;
 extern const pb_msgdesc_t ReadingEntry_msg;
 extern const pb_msgdesc_t StringValue_msg;
 extern const pb_msgdesc_t HealthRequest_msg;
+extern const pb_msgdesc_t ConfigRequest_msg;
 extern const pb_msgdesc_t HealthResponse_msg;
 extern const pb_msgdesc_t FirmwareVersionRequest_msg;
 extern const pb_msgdesc_t ConfigResponse_msg;
@@ -732,6 +750,7 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 #define ReadingEntry_fields &ReadingEntry_msg
 #define StringValue_fields &StringValue_msg
 #define HealthRequest_fields &HealthRequest_msg
+#define ConfigRequest_fields &ConfigRequest_msg
 #define HealthResponse_fields &HealthResponse_msg
 #define FirmwareVersionRequest_fields &FirmwareVersionRequest_msg
 #define ConfigResponse_fields &ConfigResponse_msg
@@ -740,6 +759,7 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 
 /* Maximum encoded size of messages (where known) */
 #define Battery_size                             34
+#define ConfigRequest_size                       33
 #define ConfigResponse_size                      91
 #define FirmwareVersionRequest_size              33
 #define GpsUpdateRequest_size                    376
