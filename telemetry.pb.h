@@ -182,7 +182,7 @@ typedef struct _ReadingBatchRequest {
 } ReadingBatchRequest;
 
 typedef struct _StringValue {
-    char value[512];
+    char value[1024];
 } StringValue;
 
 /* Minimal liveness/identity ping sent once, right after the device connects
@@ -773,8 +773,8 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 #define ReadingBatchRequest_size                 241
 #define ReadingEntry_size                        22
 #define ReadingRequest_size                      71
-#define StringValue_size                         514
-#define TELEMETRY_PB_H_MAX_SIZE                  LogChunk_size
+#define StringValue_size                         1026
+#define TELEMETRY_PB_H_MAX_SIZE                  StringValue_size
 #define WalkTestPoint_size                       177
 
 #ifdef __cplusplus
