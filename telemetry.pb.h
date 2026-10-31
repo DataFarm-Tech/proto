@@ -21,6 +21,18 @@ typedef enum _ChargerState {
     ChargerState_CHARGER_DONE = 6
 } ChargerState;
 
+/* What the modem gave up on when it could not connect (firmware: ModemStateMachine::Failure). The numbers are the wire values and must
+ not be reordered or reused, whatever the firmware's own enum does. */
+typedef enum _LinkFailure {
+    LinkFailure_LINK_FAILURE_NONE = 0, /* no failure to report */
+    LinkFailure_LINK_FAILURE_INIT_FAILED = 1, /* the modem would not take its start-up commands */
+    LinkFailure_LINK_FAILURE_SIM_NOT_READY = 2, /* the SIM never reported ready */
+    LinkFailure_LINK_FAILURE_SIM_FAILURE = 3, /* the modem could not talk to the SIM (CME 13) and restarting its SIM interface did not help */
+    LinkFailure_LINK_FAILURE_SIM_LOCKED = 4, /* the SIM wants a PIN or PUK */
+    LinkFailure_LINK_FAILURE_NOT_REGISTERED = 5, /* no registration in time: still searching, or not searching at all */
+    LinkFailure_LINK_FAILURE_REGISTRATION_DENIED = 6 /* the network refused the registration (CEREG stat 3) */
+} LinkFailure;
+
 /* How the modem is treated during the deep-sleep interval. Names are read by
  netlink as strings (node_config.modem_power_mode), like RATType. */
 typedef enum _ModemPowerMode {
@@ -248,6 +260,11 @@ typedef struct _HealthRequest {
     /* The node's hardware version, so the reply can say whether the latest firmware
  release supports it (HealthResponse.latest_fw_version). */
     char hw_ver[32];
+    /* Why the device's most recent connection attempt gave up, if one did since the last health ping that got through. The ping is only sent
+ once the device is connected, so a cycle that failed to connect cannot report it: the firmware keeps the reason in RTC memory
+ (survives deep sleep) and this ping reports it, once, one connect late. LINK_FAILURE_NONE if nothing failed, or if RTC memory was
+ cleared by a cold power-on. Names are read by netlink as strings (health_checks.prev_cycle_link_failure), like ModemPowerMode. */
+    LinkFailure prev_cycle_link_failure;
 } HealthRequest;
 
 /* Sent to the legacy /config endpoint (FETCH) so the server knows which node's
@@ -389,6 +406,10 @@ extern "C" {
 #define _ChargerState_MAX ChargerState_CHARGER_DONE
 #define _ChargerState_ARRAYSIZE ((ChargerState)(ChargerState_CHARGER_DONE+1))
 
+#define _LinkFailure_MIN LinkFailure_LINK_FAILURE_NONE
+#define _LinkFailure_MAX LinkFailure_LINK_FAILURE_REGISTRATION_DENIED
+#define _LinkFailure_ARRAYSIZE ((LinkFailure)(LinkFailure_LINK_FAILURE_REGISTRATION_DENIED+1))
+
 #define _ModemPowerMode_MIN ModemPowerMode_POWER_OFF
 #define _ModemPowerMode_MAX ModemPowerMode_ALWAYS_ON
 #define _ModemPowerMode_ARRAYSIZE ((ModemPowerMode)(ModemPowerMode_ALWAYS_ON+1))
@@ -408,6 +429,7 @@ extern "C" {
 
 
 
+#define HealthRequest_prev_cycle_link_failure_ENUMTYPE LinkFailure
 
 
 
@@ -429,7 +451,7 @@ extern "C" {
 #define ReadingBatchRequest_init_default         {"", 0, 0, {ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default}, 0}
 #define ReadingEntry_init_default                {"", 0}
 #define StringValue_init_default                 {""}
-#define HealthRequest_init_default               {"", "", "", 0, 0, 0, 0, 0, 0, 0, ""}
+#define HealthRequest_init_default               {"", "", "", 0, 0, 0, 0, 0, 0, 0, "", _LinkFailure_MIN}
 #define ConfigRequest_init_default               {""}
 #define HealthResponse_init_default              {0, false, ConfigResponse_init_default, false, "", false, 0}
 #define FirmwareVersionRequest_init_default      {""}
@@ -446,7 +468,7 @@ extern "C" {
 #define ReadingBatchRequest_init_zero            {"", 0, 0, {ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero}, 0}
 #define ReadingEntry_init_zero                   {"", 0}
 #define StringValue_init_zero                    {""}
-#define HealthRequest_init_zero                  {"", "", "", 0, 0, 0, 0, 0, 0, 0, ""}
+#define HealthRequest_init_zero                  {"", "", "", 0, 0, 0, 0, 0, 0, 0, "", _LinkFailure_MIN}
 #define ConfigRequest_init_zero                  {""}
 #define HealthResponse_init_zero                 {0, false, ConfigResponse_init_zero, false, "", false, 0}
 #define FirmwareVersionRequest_init_zero         {""}
@@ -519,6 +541,7 @@ extern "C" {
 #define HealthRequest_prev_cycle_gps_fix_ms_tag  9
 #define HealthRequest_prev_cycle_duration_s_tag  10
 #define HealthRequest_hw_ver_tag                 11
+#define HealthRequest_prev_cycle_link_failure_tag 12
 #define ConfigRequest_node_id_tag                1
 #define FirmwareVersionRequest_hw_ver_tag        1
 #define ConfigResponse_main_app_delay_tag        1
@@ -660,7 +683,8 @@ X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_exchanges_attempted,   7) \
 X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_exchanges_succeeded,   8) \
 X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_gps_fix_ms,   9) \
 X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_duration_s,  10) \
-X(a, STATIC,   SINGULAR, STRING,   hw_ver,           11)
+X(a, STATIC,   SINGULAR, STRING,   hw_ver,           11) \
+X(a, STATIC,   SINGULAR, UENUM,    prev_cycle_link_failure,  12)
 #define HealthRequest_CALLBACK NULL
 #define HealthRequest_DEFAULT NULL
 
@@ -763,7 +787,7 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 #define ConfigResponse_size                      91
 #define FirmwareVersionRequest_size              33
 #define GpsUpdateRequest_size                    376
-#define HealthRequest_size                       174
+#define HealthRequest_size                       176
 #define HealthResponse_size                      236
 #define LogChunk_size                            653
 #define NetInfo_size                             59
