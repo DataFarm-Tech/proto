@@ -244,6 +244,24 @@ message HealthRequest {
     // The node's hardware version, so the reply can say whether the latest firmware
     // release supports it (HealthResponse.latest_fw_version).
     string hw_ver = 11;
+
+    // Why the device's most recent connection attempt gave up, if one did since the last health ping that got through. The ping is only sent
+    // once the device is connected, so a cycle that failed to connect cannot report it: the firmware keeps the reason in RTC memory
+    // (survives deep sleep) and this ping reports it, once, one connect late. LINK_FAILURE_NONE if nothing failed, or if RTC memory was
+    // cleared by a cold power-on. Names are read by netlink as strings (health_checks.prev_cycle_link_failure), like ModemPowerMode.
+    LinkFailure prev_cycle_link_failure = 12;
+}
+
+// What the modem gave up on when it could not connect (firmware: ModemStateMachine::Failure). The numbers are the wire values and must
+// not be reordered or reused, whatever the firmware's own enum does.
+enum LinkFailure {
+    LINK_FAILURE_NONE                 = 0; // no failure to report
+    LINK_FAILURE_INIT_FAILED          = 1; // the modem would not take its start-up commands
+    LINK_FAILURE_SIM_NOT_READY        = 2; // the SIM never reported ready
+    LINK_FAILURE_SIM_FAILURE          = 3; // the modem could not talk to the SIM (CME 13) and restarting its SIM interface did not help
+    LINK_FAILURE_SIM_LOCKED           = 4; // the SIM wants a PIN or PUK
+    LINK_FAILURE_NOT_REGISTERED       = 5; // no registration in time: still searching, or not searching at all
+    LINK_FAILURE_REGISTRATION_DENIED  = 6; // the network refused the registration (CEREG stat 3)
 }
 
 // Sent to the legacy /config endpoint (FETCH) so the server knows which node's
