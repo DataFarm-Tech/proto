@@ -36,6 +36,7 @@ FirmwareVersionRequest.hw_ver max_size:32
 
 # Covers "0x" + a wide multi-band hex mask + null terminator with headroom.
 ConfigResponse.lte_bandmask  max_size:40
+ConfigResponse.server_host   max_size:64
 
 LogChunk.node_id max_size:32
 # Send-side chunk size is 512 bytes of raw log text; this leaves headroom

@@ -328,6 +328,14 @@ typedef struct _ConfigResponse {
  power control (EC25AU). */
     bool has_modem_power_mode;
     ModemPowerMode modem_power_mode;
+    /* Hostname of the CoAP server this device should talk to (e.g.
+ "coap.staging.datafarmtechnologies.com"), so a node can be moved between
+ environments while it is in the field. Optional so "not sent" is distinguishable
+ from a real choice: an older server leaves it unset and the device keeps the host
+ it already has. The device tries the new host and falls back to the build's own
+ host if it cannot reach it (see nitra's server-host handling). */
+    bool has_server_host;
+    char server_host[64];
 } ConfigResponse;
 
 /* The server's reply to a HealthRequest. The node's configuration rides back in
@@ -455,7 +463,7 @@ extern "C" {
 #define ConfigRequest_init_default               {""}
 #define HealthResponse_init_default              {0, false, ConfigResponse_init_default, false, "", false, 0}
 #define FirmwareVersionRequest_init_default      {""}
-#define ConfigResponse_init_default              {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, "", false, 0, false, _ModemPowerMode_MIN}
+#define ConfigResponse_init_default              {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, "", false, 0, false, _ModemPowerMode_MIN, false, ""}
 #define LogChunk_init_default                    {"", 0, 0, 0, ""}
 #define WalkTestPoint_init_default               {"", false, Position_init_default, false, NetStat_init_default, 0, 0}
 #define GpsUpdateRequest_init_zero               {"", false, Position_init_zero, false, Battery_init_zero, false, OtaStatus_init_zero, false, NetStat_init_zero, "", "", false, NetInfo_init_zero}
@@ -472,7 +480,7 @@ extern "C" {
 #define ConfigRequest_init_zero                  {""}
 #define HealthResponse_init_zero                 {0, false, ConfigResponse_init_zero, false, "", false, 0}
 #define FirmwareVersionRequest_init_zero         {""}
-#define ConfigResponse_init_zero                 {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, "", false, 0, false, _ModemPowerMode_MIN}
+#define ConfigResponse_init_zero                 {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, "", false, 0, false, _ModemPowerMode_MIN, false, ""}
 #define LogChunk_init_zero                       {"", 0, 0, 0, ""}
 #define WalkTestPoint_init_zero                  {"", false, Position_init_zero, false, NetStat_init_zero, 0, 0}
 
@@ -557,6 +565,7 @@ extern "C" {
 #define ConfigResponse_lte_bandmask_tag          14
 #define ConfigResponse_device_logging_enabled_tag 15
 #define ConfigResponse_modem_power_mode_tag      16
+#define ConfigResponse_server_host_tag           17
 #define HealthResponse_ack_tag                   1
 #define HealthResponse_config_tag                2
 #define HealthResponse_latest_fw_version_tag     3
@@ -720,7 +729,8 @@ X(a, STATIC,   SINGULAR, UENUM,    rat_type,         12) \
 X(a, STATIC,   SINGULAR, BOOL,     gps_every_cycle,  13) \
 X(a, STATIC,   SINGULAR, STRING,   lte_bandmask,     14) \
 X(a, STATIC,   OPTIONAL, BOOL,     device_logging_enabled,  15) \
-X(a, STATIC,   OPTIONAL, UENUM,    modem_power_mode,  16)
+X(a, STATIC,   OPTIONAL, UENUM,    modem_power_mode,  16) \
+X(a, STATIC,   OPTIONAL, STRING,   server_host,      17)
 #define ConfigResponse_CALLBACK NULL
 #define ConfigResponse_DEFAULT NULL
 
@@ -784,11 +794,11 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 /* Maximum encoded size of messages (where known) */
 #define Battery_size                             34
 #define ConfigRequest_size                       33
-#define ConfigResponse_size                      91
+#define ConfigResponse_size                      157
 #define FirmwareVersionRequest_size              33
 #define GpsUpdateRequest_size                    376
 #define HealthRequest_size                       176
-#define HealthResponse_size                      236
+#define HealthResponse_size                      303
 #define LogChunk_size                            653
 #define NetInfo_size                             59
 #define NetStat_size                             97

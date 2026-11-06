@@ -361,6 +361,14 @@ message ConfigResponse {
     // reads it at startup). Ignored on boards whose modem has no PSM/PMU
     // power control (EC25AU).
     optional ModemPowerMode modem_power_mode = 16;
+
+    // Hostname of the CoAP server this device should talk to (e.g.
+    // "coap.staging.datafarmtechnologies.com"), so a node can be moved between
+    // environments while it is in the field. Optional so "not sent" is distinguishable
+    // from a real choice: an older server leaves it unset and the device keeps the host
+    // it already has. The device tries the new host and falls back to the build's own
+    // host if it cannot reach it (see nitra's server-host handling).
+    optional string server_host = 17;
 }
 
 // How the modem is treated during the deep-sleep interval. Names are read by
