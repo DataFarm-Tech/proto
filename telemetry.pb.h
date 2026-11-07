@@ -265,6 +265,12 @@ typedef struct _HealthRequest {
  (survives deep sleep) and this ping reports it, once, one connect late. LINK_FAILURE_NONE if nothing failed, or if RTC memory was
  cleared by a cold power-on. Names are read by netlink as strings (health_checks.prev_cycle_link_failure), like ModemPowerMode. */
     LinkFailure prev_cycle_link_failure;
+    /* How many wakes in a row failed to connect before this ping got through (0 if the last one connected, or nothing has failed). The
+ firmware keeps the count in NVS, so it survives a power cycle, which RTC memory (and prev_cycle_link_failure above) does not, and clears
+ it once this ping has been sent. With prev_cycle_link_failure it tells the server how long a node was offline and why. Optional so an
+ older firmware's "not sent" is not read as "0 failed wakes". */
+    bool has_consecutive_failed_wakes;
+    uint32_t consecutive_failed_wakes;
 } HealthRequest;
 
 /* Sent to the legacy /config endpoint (FETCH) so the server knows which node's
@@ -459,7 +465,7 @@ extern "C" {
 #define ReadingBatchRequest_init_default         {"", 0, 0, {ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default}, 0}
 #define ReadingEntry_init_default                {"", 0}
 #define StringValue_init_default                 {""}
-#define HealthRequest_init_default               {"", "", "", 0, 0, 0, 0, 0, 0, 0, "", _LinkFailure_MIN}
+#define HealthRequest_init_default               {"", "", "", 0, 0, 0, 0, 0, 0, 0, "", _LinkFailure_MIN, false, 0}
 #define ConfigRequest_init_default               {""}
 #define HealthResponse_init_default              {0, false, ConfigResponse_init_default, false, "", false, 0}
 #define FirmwareVersionRequest_init_default      {""}
@@ -476,7 +482,7 @@ extern "C" {
 #define ReadingBatchRequest_init_zero            {"", 0, 0, {ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero}, 0}
 #define ReadingEntry_init_zero                   {"", 0}
 #define StringValue_init_zero                    {""}
-#define HealthRequest_init_zero                  {"", "", "", 0, 0, 0, 0, 0, 0, 0, "", _LinkFailure_MIN}
+#define HealthRequest_init_zero                  {"", "", "", 0, 0, 0, 0, 0, 0, 0, "", _LinkFailure_MIN, false, 0}
 #define ConfigRequest_init_zero                  {""}
 #define HealthResponse_init_zero                 {0, false, ConfigResponse_init_zero, false, "", false, 0}
 #define FirmwareVersionRequest_init_zero         {""}
@@ -550,6 +556,7 @@ extern "C" {
 #define HealthRequest_prev_cycle_duration_s_tag  10
 #define HealthRequest_hw_ver_tag                 11
 #define HealthRequest_prev_cycle_link_failure_tag 12
+#define HealthRequest_consecutive_failed_wakes_tag 13
 #define ConfigRequest_node_id_tag                1
 #define FirmwareVersionRequest_hw_ver_tag        1
 #define ConfigResponse_main_app_delay_tag        1
@@ -693,7 +700,8 @@ X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_exchanges_succeeded,   8) \
 X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_gps_fix_ms,   9) \
 X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_duration_s,  10) \
 X(a, STATIC,   SINGULAR, STRING,   hw_ver,           11) \
-X(a, STATIC,   SINGULAR, UENUM,    prev_cycle_link_failure,  12)
+X(a, STATIC,   SINGULAR, UENUM,    prev_cycle_link_failure,  12) \
+X(a, STATIC,   OPTIONAL, UINT32,   consecutive_failed_wakes,  13)
 #define HealthRequest_CALLBACK NULL
 #define HealthRequest_DEFAULT NULL
 
@@ -797,7 +805,7 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 #define ConfigResponse_size                      157
 #define FirmwareVersionRequest_size              33
 #define GpsUpdateRequest_size                    376
-#define HealthRequest_size                       176
+#define HealthRequest_size                       182
 #define HealthResponse_size                      303
 #define LogChunk_size                            653
 #define NetInfo_size                             59
