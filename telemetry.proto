@@ -256,6 +256,11 @@ message HealthRequest {
     // it once this ping has been sent. With prev_cycle_link_failure it tells the server how long a node was offline and why. Optional so an
     // older firmware's "not sent" is not read as "0 failed wakes".
     optional uint32 consecutive_failed_wakes = 13;
+
+    // The generation of a new OSCORE secret the device has stored but not yet started using (ConfigResponse.new_oscore_secret). Absent when
+    // nothing is staged. This is the device's receipt: once the server sees it for the generation it offered, it switches that node to the
+    // new secret, and the device tries the new secret from its next cycle.
+    optional uint32 staged_secret_generation = 14;
 }
 
 // What the modem gave up on when it could not connect (firmware: ModemStateMachine::Failure). The numbers are the wire values and must
@@ -375,6 +380,14 @@ message ConfigResponse {
     // it already has. The device tries the new host and falls back to the build's own
     // host if it cannot reach it (see nitra's server-host handling).
     optional string server_host = 17;
+
+    // A new OSCORE master secret for this device to switch to, and the generation it belongs to, so a leaked or compromised secret (or a node
+    // moving to another environment) can be replaced without a site visit. This message arrives inside OSCORE, so the current secret is what
+    // vouches for the new one. The device keeps it aside (staged), reports staged_secret_generation in its next HealthRequest, and tries it
+    // from the cycle after that, falling back to its current secret if the server does not answer under it. Both fields are set together or
+    // not at all; the generation must be higher than the device's current one. Never logged.
+    optional bytes  new_oscore_secret     = 18; // exactly 16 bytes
+    optional uint32 new_secret_generation = 19;
 }
 
 // How the modem is treated during the deep-sleep interval. Names are read by
