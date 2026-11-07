@@ -250,6 +250,12 @@ message HealthRequest {
     // (survives deep sleep) and this ping reports it, once, one connect late. LINK_FAILURE_NONE if nothing failed, or if RTC memory was
     // cleared by a cold power-on. Names are read by netlink as strings (health_checks.prev_cycle_link_failure), like ModemPowerMode.
     LinkFailure prev_cycle_link_failure = 12;
+
+    // How many wakes in a row failed to connect before this ping got through (0 if the last one connected, or nothing has failed). The
+    // firmware keeps the count in NVS, so it survives a power cycle, which RTC memory (and prev_cycle_link_failure above) does not, and clears
+    // it once this ping has been sent. With prev_cycle_link_failure it tells the server how long a node was offline and why. Optional so an
+    // older firmware's "not sent" is not read as "0 failed wakes".
+    optional uint32 consecutive_failed_wakes = 13;
 }
 
 // What the modem gave up on when it could not connect (firmware: ModemStateMachine::Failure). The numbers are the wire values and must
