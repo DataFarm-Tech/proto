@@ -258,9 +258,14 @@ message HealthRequest {
     optional uint32 consecutive_failed_wakes = 13;
 
     // The generation of a new OSCORE secret the device has stored but not yet started using (ConfigResponse.new_oscore_secret). Absent when
-    // nothing is staged. This is the device's receipt: once the server sees it for the generation it offered, it switches that node to the
-    // new secret, and the device tries the new secret from its next cycle.
+    // nothing is staged. This is the device's receipt: it tells the server the device has stored the new secret, and once the receipt is
+    // answered the device uses the new secret from its next cycle.
     optional uint32 staged_secret_generation = 14;
+
+    // The generation of the OSCORE secret this ping was protected with (1 for a node's first secret, or one that has never been rotated). The
+    // server uses it to see that a node has started using a new secret it offered, and so retire the old one, and it shows which generation each
+    // node is on. Optional so an older firmware's "not sent" is not read as generation 0.
+    optional uint32 secret_generation = 15;
 }
 
 // What the modem gave up on when it could not connect (firmware: ModemStateMachine::Failure). The numbers are the wire values and must
@@ -383,8 +388,10 @@ message ConfigResponse {
 
     // A new OSCORE master secret for this device to switch to, and the generation it belongs to, so a leaked or compromised secret (or a node
     // moving to another environment) can be replaced without a site visit. This message arrives inside OSCORE, so the current secret is what
-    // vouches for the new one. The device keeps it aside (staged), reports staged_secret_generation in its next HealthRequest, and tries it
-    // from the cycle after that, falling back to its current secret if the server does not answer under it. Both fields are set together or
+    // vouches for the new one. The device keeps it aside (staged), reports staged_secret_generation in its next HealthRequest, and once that
+    // is answered uses the new secret from the next cycle. The new secret's OSCORE ID context is its generation as 4 big-endian bytes (none for
+    // generation 1), so the server can hold both secrets for the node and accept either until it sees a request under the new one. If the new
+    // secret gets no answer for 3 pings in a row the device goes back to the old one. Both fields are set together or
     // not at all; the generation must be higher than the device's current one. Never logged.
     optional bytes  new_oscore_secret     = 18; // exactly 16 bytes
     optional uint32 new_secret_generation = 19;

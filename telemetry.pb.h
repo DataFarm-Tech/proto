@@ -272,10 +272,15 @@ typedef struct _HealthRequest {
     bool has_consecutive_failed_wakes;
     uint32_t consecutive_failed_wakes;
     /* The generation of a new OSCORE secret the device has stored but not yet started using (ConfigResponse.new_oscore_secret). Absent when
- nothing is staged. This is the device's receipt: once the server sees it for the generation it offered, it switches that node to the
- new secret, and the device tries the new secret from its next cycle. */
+ nothing is staged. This is the device's receipt: it tells the server the device has stored the new secret, and once the receipt is
+ answered the device uses the new secret from its next cycle. */
     bool has_staged_secret_generation;
     uint32_t staged_secret_generation;
+    /* The generation of the OSCORE secret this ping was protected with (1 for a node's first secret, or one that has never been rotated). The
+ server uses it to see that a node has started using a new secret it offered, and so retire the old one, and it shows which generation each
+ node is on. Optional so an older firmware's "not sent" is not read as generation 0. */
+    bool has_secret_generation;
+    uint32_t secret_generation;
 } HealthRequest;
 
 /* Sent to the legacy /config endpoint (FETCH) so the server knows which node's
@@ -350,8 +355,10 @@ typedef struct _ConfigResponse {
     char server_host[64];
     /* A new OSCORE master secret for this device to switch to, and the generation it belongs to, so a leaked or compromised secret (or a node
  moving to another environment) can be replaced without a site visit. This message arrives inside OSCORE, so the current secret is what
- vouches for the new one. The device keeps it aside (staged), reports staged_secret_generation in its next HealthRequest, and tries it
- from the cycle after that, falling back to its current secret if the server does not answer under it. Both fields are set together or
+ vouches for the new one. The device keeps it aside (staged), reports staged_secret_generation in its next HealthRequest, and once that
+ is answered uses the new secret from the next cycle. The new secret's OSCORE ID context is its generation as 4 big-endian bytes (none for
+ generation 1), so the server can hold both secrets for the node and accept either until it sees a request under the new one. If the new
+ secret gets no answer for 3 pings in a row the device goes back to the old one. Both fields are set together or
  not at all; the generation must be higher than the device's current one. Never logged. */
     bool has_new_oscore_secret;
     ConfigResponse_new_oscore_secret_t new_oscore_secret; /* exactly 16 bytes */
@@ -480,7 +487,7 @@ extern "C" {
 #define ReadingBatchRequest_init_default         {"", 0, 0, {ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default}, 0}
 #define ReadingEntry_init_default                {"", 0}
 #define StringValue_init_default                 {""}
-#define HealthRequest_init_default               {"", "", "", 0, 0, 0, 0, 0, 0, 0, "", _LinkFailure_MIN, false, 0, false, 0}
+#define HealthRequest_init_default               {"", "", "", 0, 0, 0, 0, 0, 0, 0, "", _LinkFailure_MIN, false, 0, false, 0, false, 0}
 #define ConfigRequest_init_default               {""}
 #define HealthResponse_init_default              {0, false, ConfigResponse_init_default, false, "", false, 0}
 #define FirmwareVersionRequest_init_default      {""}
@@ -497,7 +504,7 @@ extern "C" {
 #define ReadingBatchRequest_init_zero            {"", 0, 0, {ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero}, 0}
 #define ReadingEntry_init_zero                   {"", 0}
 #define StringValue_init_zero                    {""}
-#define HealthRequest_init_zero                  {"", "", "", 0, 0, 0, 0, 0, 0, 0, "", _LinkFailure_MIN, false, 0, false, 0}
+#define HealthRequest_init_zero                  {"", "", "", 0, 0, 0, 0, 0, 0, 0, "", _LinkFailure_MIN, false, 0, false, 0, false, 0}
 #define ConfigRequest_init_zero                  {""}
 #define HealthResponse_init_zero                 {0, false, ConfigResponse_init_zero, false, "", false, 0}
 #define FirmwareVersionRequest_init_zero         {""}
@@ -573,6 +580,7 @@ extern "C" {
 #define HealthRequest_prev_cycle_link_failure_tag 12
 #define HealthRequest_consecutive_failed_wakes_tag 13
 #define HealthRequest_staged_secret_generation_tag 14
+#define HealthRequest_secret_generation_tag      15
 #define ConfigRequest_node_id_tag                1
 #define FirmwareVersionRequest_hw_ver_tag        1
 #define ConfigResponse_main_app_delay_tag        1
@@ -720,7 +728,8 @@ X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_duration_s,  10) \
 X(a, STATIC,   SINGULAR, STRING,   hw_ver,           11) \
 X(a, STATIC,   SINGULAR, UENUM,    prev_cycle_link_failure,  12) \
 X(a, STATIC,   OPTIONAL, UINT32,   consecutive_failed_wakes,  13) \
-X(a, STATIC,   OPTIONAL, UINT32,   staged_secret_generation,  14)
+X(a, STATIC,   OPTIONAL, UINT32,   staged_secret_generation,  14) \
+X(a, STATIC,   OPTIONAL, UINT32,   secret_generation,  15)
 #define HealthRequest_CALLBACK NULL
 #define HealthRequest_DEFAULT NULL
 
@@ -826,7 +835,7 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 #define ConfigResponse_size                      183
 #define FirmwareVersionRequest_size              33
 #define GpsUpdateRequest_size                    376
-#define HealthRequest_size                       188
+#define HealthRequest_size                       194
 #define HealthResponse_size                      329
 #define LogChunk_size                            653
 #define NetInfo_size                             59
