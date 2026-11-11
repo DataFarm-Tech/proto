@@ -50,3 +50,6 @@ ReadingBatchRequest.node_id max_size:32
 # leaves headroom for one more type without needing to touch this again.
 ReadingBatchRequest.readings max_count:8
 ReadingEntry.m_type max_size:16
+
+# A new OSCORE master secret is exactly 16 bytes (OSCORE_SECRET_LEN in the firmware).
+ConfigResponse.new_oscore_secret max_size:16

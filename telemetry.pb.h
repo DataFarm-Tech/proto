@@ -271,6 +271,16 @@ typedef struct _HealthRequest {
  older firmware's "not sent" is not read as "0 failed wakes". */
     bool has_consecutive_failed_wakes;
     uint32_t consecutive_failed_wakes;
+    /* The generation of a new OSCORE secret the device has stored but not yet started using (ConfigResponse.new_oscore_secret). Absent when
+ nothing is staged. This is the device's receipt: it tells the server the device has stored the new secret, and once the receipt is
+ answered the device uses the new secret from its next cycle. */
+    bool has_staged_secret_generation;
+    uint32_t staged_secret_generation;
+    /* The generation of the OSCORE secret this ping was protected with (1 for a node's first secret, or one that has never been rotated). The
+ server uses it to see that a node has started using a new secret it offered, and so retire the old one, and it shows which generation each
+ node is on. Optional so an older firmware's "not sent" is not read as generation 0. */
+    bool has_secret_generation;
+    uint32_t secret_generation;
 } HealthRequest;
 
 /* Sent to the legacy /config endpoint (FETCH) so the server knows which node's
@@ -289,6 +299,7 @@ typedef struct _FirmwareVersionRequest {
     char hw_ver[32];
 } FirmwareVersionRequest;
 
+typedef PB_BYTES_ARRAY_T(16) ConfigResponse_new_oscore_secret_t;
 /* Node configuration, returned inside HealthResponse -- looked up from the
  node_config table server-side. */
 typedef struct _ConfigResponse {
@@ -342,6 +353,17 @@ typedef struct _ConfigResponse {
  host if it cannot reach it (see nitra's server-host handling). */
     bool has_server_host;
     char server_host[64];
+    /* A new OSCORE master secret for this device to switch to, and the generation it belongs to, so a leaked or compromised secret (or a node
+ moving to another environment) can be replaced without a site visit. This message arrives inside OSCORE, so the current secret is what
+ vouches for the new one. The device keeps it aside (staged), reports staged_secret_generation in its next HealthRequest, and once that
+ is answered uses the new secret from the next cycle. The new secret's OSCORE ID context is its generation as 4 big-endian bytes (none for
+ generation 1), so the server can hold both secrets for the node and accept either until it sees a request under the new one. If the new
+ secret gets no answer for 3 pings in a row the device goes back to the old one. Both fields are set together or
+ not at all; the generation must be higher than the device's current one. Never logged. */
+    bool has_new_oscore_secret;
+    ConfigResponse_new_oscore_secret_t new_oscore_secret; /* exactly 16 bytes */
+    bool has_new_secret_generation;
+    uint32_t new_secret_generation;
 } ConfigResponse;
 
 /* The server's reply to a HealthRequest. The node's configuration rides back in
@@ -465,11 +487,11 @@ extern "C" {
 #define ReadingBatchRequest_init_default         {"", 0, 0, {ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default, ReadingEntry_init_default}, 0}
 #define ReadingEntry_init_default                {"", 0}
 #define StringValue_init_default                 {""}
-#define HealthRequest_init_default               {"", "", "", 0, 0, 0, 0, 0, 0, 0, "", _LinkFailure_MIN, false, 0}
+#define HealthRequest_init_default               {"", "", "", 0, 0, 0, 0, 0, 0, 0, "", _LinkFailure_MIN, false, 0, false, 0, false, 0}
 #define ConfigRequest_init_default               {""}
 #define HealthResponse_init_default              {0, false, ConfigResponse_init_default, false, "", false, 0}
 #define FirmwareVersionRequest_init_default      {""}
-#define ConfigResponse_init_default              {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, "", false, 0, false, _ModemPowerMode_MIN, false, ""}
+#define ConfigResponse_init_default              {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, "", false, 0, false, _ModemPowerMode_MIN, false, "", false, {0, {0}}, false, 0}
 #define LogChunk_init_default                    {"", 0, 0, 0, ""}
 #define WalkTestPoint_init_default               {"", false, Position_init_default, false, NetStat_init_default, 0, 0}
 #define GpsUpdateRequest_init_zero               {"", false, Position_init_zero, false, Battery_init_zero, false, OtaStatus_init_zero, false, NetStat_init_zero, "", "", false, NetInfo_init_zero}
@@ -482,11 +504,11 @@ extern "C" {
 #define ReadingBatchRequest_init_zero            {"", 0, 0, {ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero, ReadingEntry_init_zero}, 0}
 #define ReadingEntry_init_zero                   {"", 0}
 #define StringValue_init_zero                    {""}
-#define HealthRequest_init_zero                  {"", "", "", 0, 0, 0, 0, 0, 0, 0, "", _LinkFailure_MIN, false, 0}
+#define HealthRequest_init_zero                  {"", "", "", 0, 0, 0, 0, 0, 0, 0, "", _LinkFailure_MIN, false, 0, false, 0, false, 0}
 #define ConfigRequest_init_zero                  {""}
 #define HealthResponse_init_zero                 {0, false, ConfigResponse_init_zero, false, "", false, 0}
 #define FirmwareVersionRequest_init_zero         {""}
-#define ConfigResponse_init_zero                 {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, "", false, 0, false, _ModemPowerMode_MIN, false, ""}
+#define ConfigResponse_init_zero                 {0, 0, 0, 0, 0, 0, 0, 0, _RATType_MIN, 0, "", false, 0, false, _ModemPowerMode_MIN, false, "", false, {0, {0}}, false, 0}
 #define LogChunk_init_zero                       {"", 0, 0, 0, ""}
 #define WalkTestPoint_init_zero                  {"", false, Position_init_zero, false, NetStat_init_zero, 0, 0}
 
@@ -557,6 +579,8 @@ extern "C" {
 #define HealthRequest_hw_ver_tag                 11
 #define HealthRequest_prev_cycle_link_failure_tag 12
 #define HealthRequest_consecutive_failed_wakes_tag 13
+#define HealthRequest_staged_secret_generation_tag 14
+#define HealthRequest_secret_generation_tag      15
 #define ConfigRequest_node_id_tag                1
 #define FirmwareVersionRequest_hw_ver_tag        1
 #define ConfigResponse_main_app_delay_tag        1
@@ -573,6 +597,8 @@ extern "C" {
 #define ConfigResponse_device_logging_enabled_tag 15
 #define ConfigResponse_modem_power_mode_tag      16
 #define ConfigResponse_server_host_tag           17
+#define ConfigResponse_new_oscore_secret_tag     18
+#define ConfigResponse_new_secret_generation_tag 19
 #define HealthResponse_ack_tag                   1
 #define HealthResponse_config_tag                2
 #define HealthResponse_latest_fw_version_tag     3
@@ -701,7 +727,9 @@ X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_gps_fix_ms,   9) \
 X(a, STATIC,   SINGULAR, UINT32,   prev_cycle_duration_s,  10) \
 X(a, STATIC,   SINGULAR, STRING,   hw_ver,           11) \
 X(a, STATIC,   SINGULAR, UENUM,    prev_cycle_link_failure,  12) \
-X(a, STATIC,   OPTIONAL, UINT32,   consecutive_failed_wakes,  13)
+X(a, STATIC,   OPTIONAL, UINT32,   consecutive_failed_wakes,  13) \
+X(a, STATIC,   OPTIONAL, UINT32,   staged_secret_generation,  14) \
+X(a, STATIC,   OPTIONAL, UINT32,   secret_generation,  15)
 #define HealthRequest_CALLBACK NULL
 #define HealthRequest_DEFAULT NULL
 
@@ -738,7 +766,9 @@ X(a, STATIC,   SINGULAR, BOOL,     gps_every_cycle,  13) \
 X(a, STATIC,   SINGULAR, STRING,   lte_bandmask,     14) \
 X(a, STATIC,   OPTIONAL, BOOL,     device_logging_enabled,  15) \
 X(a, STATIC,   OPTIONAL, UENUM,    modem_power_mode,  16) \
-X(a, STATIC,   OPTIONAL, STRING,   server_host,      17)
+X(a, STATIC,   OPTIONAL, STRING,   server_host,      17) \
+X(a, STATIC,   OPTIONAL, BYTES,    new_oscore_secret,  18) \
+X(a, STATIC,   OPTIONAL, UINT32,   new_secret_generation,  19)
 #define ConfigResponse_CALLBACK NULL
 #define ConfigResponse_DEFAULT NULL
 
@@ -802,11 +832,11 @@ extern const pb_msgdesc_t WalkTestPoint_msg;
 /* Maximum encoded size of messages (where known) */
 #define Battery_size                             34
 #define ConfigRequest_size                       33
-#define ConfigResponse_size                      157
+#define ConfigResponse_size                      183
 #define FirmwareVersionRequest_size              33
 #define GpsUpdateRequest_size                    376
-#define HealthRequest_size                       182
-#define HealthResponse_size                      303
+#define HealthRequest_size                       194
+#define HealthResponse_size                      329
 #define LogChunk_size                            653
 #define NetInfo_size                             59
 #define NetStat_size                             97
